@@ -15,8 +15,9 @@ svg.on("click", function() {
   var p = snapToPoint(new Point(d3.event.x, d3.event.y), currentPolygon);
   if(canAppendPointToPolygon(currentPolygon, p)) {
     currentPolygon.push(p);
-    redrawPolygon(currentPolygon);
-    if(currentPolygon.length >= 3 && p.equals(currentPolygon[0])) {
+    var isFinishingPolygon = currentPolygon.length >= 3 && p.equals(currentPolygon[0]);
+    redrawPolygon(currentPolygon, isFinishingPolygon);
+    if(isFinishingPolygon) {
       currentPolygon = [];
       allPolygons.push(currentPolygon);
     }
@@ -126,7 +127,7 @@ function canAppendPointToPolygon(polygon, p) {
      !segmentIntersectsAnyPolygon(new LineSegment(polygon[polygon.length - 1], p)));
 }
 
-function redrawPolygon(polygon) {
+function redrawPolygon(polygon, highlight) {
   var g = circle.data(polygon).enter();
   g.append('circle')
     .attr('class', 'vertex')
@@ -136,9 +137,19 @@ function redrawPolygon(polygon) {
   var line = d3.svg.line()
     .x(function(d) { return d.x; })
     .y(function(d) { return d.y; });
-  g.append("svg:path")
+  var lineData = g.append("svg:path")
     .attr("d", line(polygon))
     .style("fill", "None")
-    .style("stroke", "black");
+    .style("stroke-width", 3);
+  if(highlight) {
+    lineData.style("stroke", "blue")
+            .transition()
+            .duration(800)
+            .style("stroke", "black")
+            .style("stroke-width", 1);
+  } else {
+    lineData.style("stroke", "black")
+            .style("stroke-width", 1);
+  }
 }
 
