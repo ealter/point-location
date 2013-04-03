@@ -17,7 +17,7 @@ svg.on("click", function() {
     redrawPolygon(currentPolygon);
   } else {
     console.log("self intersecting");
-    //TODO: animate this
+    drawTemporarySegment(p, currentPolygon[currentPolygon.length - 1]);
   }
 });
 
@@ -29,6 +29,19 @@ function snapToPoint(p, polygon) {
     }
   }
   return p.copy();
+}
+
+function drawTemporarySegment(p1, p2) {
+  var line = svg.append("svg:line")
+                .attr("x1", p1.x)
+                .attr("y1", p1.y)
+                .attr("x2", p2.x)
+                .attr("y2", p2.y)
+                .style("stroke", "red")
+                .transition()
+                .duration(600)
+                .style("opacity", 0)
+                .remove();
 }
 
 function Point(x, y) {
