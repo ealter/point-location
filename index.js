@@ -1,6 +1,7 @@
 var width = 700;
 var height = 500;
-var currentPolygon = [];
+var allPolygons = [];    //An array of point arrays. Includes currentPolygon
+var currentPolygon = []; //An array of points
 
 var svg = d3.select("body").append("svg")
                            .attr("width", width)
@@ -11,9 +12,9 @@ var path = svg.append('svg:g').selectAll('path'),
     circle = svg.append('svg:g').selectAll('g');
 
 svg.on("click", function() {
-  var p = new Point(d3.event.x, d3.event.y);
+  var p = snapToPoint(new Point(d3.event.x, d3.event.y), currentPolygon);
   if(canAppendPointToPolygon(currentPolygon, p)) {
-    currentPolygon.push(snapToPoint(p, currentPolygon));
+    currentPolygon.push(p);
     redrawPolygon(currentPolygon);
   } else {
     console.log("self intersecting");
@@ -25,7 +26,8 @@ function snapToPoint(p, polygon) {
   //If (x,y) is close to a point on the polygon, it returns that point
   for(var i=0; i<polygon.length; i++) {
     if(distanceSquared(p, polygon[i]) < 300) {
-      return new Point(polygon[i].x, polygon[i].y);
+      console.log("snapping");
+      return polygon[i].copy();
     }
   }
   return p.copy();
@@ -44,11 +46,16 @@ function drawTemporarySegment(p1, p2) {
                 .remove();
 }
 
+function isApproxEqual(a, b) {
+  var epsilon = 1e-4;
+  return (a + epsilon >= b) && (a - epsilon <= b);
+}
+
 function Point(x, y) {
   this.x = x;
   this.y = y;
   this.equals = function(p) {
-    return p.x == this.x && p.y == this.y;
+    return isApproxEqual(p.x, this.x) && isApproxEqual(p.y, this.y);
   }
   this.copy = function() {
     return new Point(this.x, this.y);
@@ -91,10 +98,10 @@ function lineSegmentsIntersect(s1, s2) {
 
 function segmentIntersectsPolygon(polygon, seg) {
   for(var i=0; i<polygon.length - 1; i++) {
-    if(!seg.p1.equals(polygon[i]) &&
-       !seg.p2.equals(polygon[i]) &&
-       !seg.p1.equals(polygon[i+1]) &&
-       !seg.p2.equals(polygon[i+1]) &&
+    if(//!seg.p1.equals(polygon[i]) &&
+       //!seg.p2.equals(polygon[i]) &&
+       //!seg.p1.equals(polygon[i+1]) &&
+       //!seg.p2.equals(polygon[i+1]) &&
        lineSegmentsIntersect(seg, new LineSegment(polygon[i], polygon[i+1]))) {
       return true;
     }
@@ -103,8 +110,10 @@ function segmentIntersectsPolygon(polygon, seg) {
 }
 
 function canAppendPointToPolygon(polygon, p) {
-  return !segmentIntersectsPolygon(polygon,
-              new LineSegment(polygon[polygon.length - 1], p));
+  return polygon.length == 0 ||
+    (!p.equals(polygon[polygon.length - 1]) && //Can't make an edge from a point to the same point
+     (polygon.length <= 1 || !p.equals(polygon[polygon.length - 2])) && //No edge that already exists
+     !segmentIntersectsPolygon(polygon, new LineSegment(polygon[polygon.length - 1], p)));
 }
 
 function redrawPolygon(polygon) {
