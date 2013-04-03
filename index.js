@@ -1,7 +1,7 @@
 var width = 700;
 var height = 500;
-var allPolygons = [];    //An array of point arrays. Includes currentPolygon
 var currentPolygon = []; //An array of points
+var allPolygons = [currentPolygon];    //An array of point arrays. Includes currentPolygon
 
 var svg = d3.select("body").append("svg")
                            .attr("width", width)
@@ -16,6 +16,10 @@ svg.on("click", function() {
   if(canAppendPointToPolygon(currentPolygon, p)) {
     currentPolygon.push(p);
     redrawPolygon(currentPolygon);
+    if(currentPolygon.length >= 3 && p.equals(currentPolygon[0])) {
+      currentPolygon = [];
+      allPolygons.push(currentPolygon);
+    }
   } else {
     console.log("self intersecting");
     drawTemporarySegment(p, currentPolygon[currentPolygon.length - 1]);
@@ -109,16 +113,21 @@ function segmentIntersectsPolygon(polygon, seg) {
   return false;
 }
 
+function segmentIntersectsAnyPolygon(seg) {
+  return allPolygons.some(function(polygon) {
+    return segmentIntersectsPolygon(polygon, seg);
+  });
+}
+
 function canAppendPointToPolygon(polygon, p) {
   return polygon.length == 0 ||
     (!p.equals(polygon[polygon.length - 1]) && //Can't make an edge from a point to the same point
      (polygon.length <= 1 || !p.equals(polygon[polygon.length - 2])) && //No edge that already exists
-     !segmentIntersectsPolygon(polygon, new LineSegment(polygon[polygon.length - 1], p)));
+     !segmentIntersectsAnyPolygon(new LineSegment(polygon[polygon.length - 1], p)));
 }
 
 function redrawPolygon(polygon) {
-  circle = circle.data(polygon);
-  var g = circle.enter();
+  var g = circle.data(polygon).enter();
   g.append('circle')
     .attr('class', 'vertex')
     .attr('r', 5)
