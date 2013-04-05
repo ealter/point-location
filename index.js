@@ -12,12 +12,13 @@ var path = svg.append('svg:g').selectAll('path'),
     circle = svg.append('svg:g').selectAll('g');
 
 svg.on("click", function() {
-  var p = snapToPoint(new Point(d3.event.x, d3.event.y), currentPolygon);
+  var p = snapToPoint(new Point(d3.event.offsetX, d3.event.offsetY), currentPolygon);
   if(canAppendPointToPolygon(currentPolygon, p)) {
     currentPolygon.push(p);
     var isFinishingPolygon = currentPolygon.length >= 3 && p.equals(currentPolygon[0]);
     redrawPolygon(currentPolygon, isFinishingPolygon);
     if(isFinishingPolygon) {
+      drawTriangulation(currentPolygon);
       currentPolygon = [];
       allPolygons.push(currentPolygon);
     }
@@ -26,6 +27,20 @@ svg.on("click", function() {
     drawTemporarySegment(p, currentPolygon[currentPolygon.length - 1]);
   }
 });
+
+function triangulate(polygon) {
+  return d3.geom.delaunay(currentPolygon.map(function (vertex) {
+    return [vertex.x, vertex.y];
+  }));
+}
+
+function drawTriangulation(polygon) {
+  path.data(triangulate(polygon))
+      .enter().append("path")
+      .attr("d", function(d) { return "M" + d.join("L") + "Z"; })
+      .style("fill", "None")
+      .style("stroke", "green");
+}
 
 function snapToPoint(p, polygon) {
   //If (x,y) is close to a point on the polygon, it returns that point
@@ -49,19 +64,6 @@ function drawTemporarySegment(p1, p2) {
                 .duration(600)
                 .style("opacity", 0)
                 .remove();
-}
-
-function segmentIntersectsPolygon(polygon, seg) {
-  for(var i=0; i<polygon.length - 1; i++) {
-    if(//!seg.p1.equals(polygon[i]) &&
-       //!seg.p2.equals(polygon[i]) &&
-       //!seg.p1.equals(polygon[i+1]) &&
-       //!seg.p2.equals(polygon[i+1]) &&
-       lineSegmentsIntersect(seg, new LineSegment(polygon[i], polygon[i+1]))) {
-      return true;
-    }
-  }
-  return false;
 }
 
 function segmentIntersectsAnyPolygon(seg) {
