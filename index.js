@@ -13,12 +13,15 @@ var path = svg.append('svg:g').selectAll('path'),
 
 svg.on("click", function() {
   var p = snapToPoint(new Point(d3.event.offsetX, d3.event.offsetY), currentPolygon);
+  console.log(p);
   if(canAppendPointToPolygon(currentPolygon, p)) {
     currentPolygon.push(p);
     var isFinishingPolygon = currentPolygon.length >= 3 && p.equals(currentPolygon[0]);
     redrawPolygon(currentPolygon, isFinishingPolygon);
     if(isFinishingPolygon) {
-      drawTriangulation(currentPolygon);
+      //drawTriangulation(currentPolygon);
+      currentPolygon.pop();
+      triangulateEarClipping(currentPolygon);
       currentPolygon = [];
       allPolygons.push(currentPolygon);
     }
