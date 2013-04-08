@@ -1,11 +1,19 @@
 <html>
 <head>
   <title>Point Location</title>
-  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <!--<script src="http://d3js.org/d3.v3.min.js"></script>-->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script src="jcanvas.min.js"></script>
   <link rel="stylesheet" type="text/css" href="main.css" />
 </head>
 <body>
-  <script src="util.js"></script> <!--Placed at the end of the body so that everything is loaded-->
+  <canvas id="canvas" width=700 height=500>
+    Canvas is not supported in your browser. Please use a modern browser to view
+    this page.
+  </canvas>
+
+  <!--These scripts are placed at the end of the body so that everything is loaded-->
+  <script src="util.js"></script> 
   <script src="geometry.js"></script>
   <script src="index.js"></script> 
   <script src="test.js"></script><!--TODO-->
