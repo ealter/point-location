@@ -85,13 +85,7 @@ function render() {
   function renderPolygons() {
     allPolygons.forEach(function (polygon) {
       for(var i=0; i<polygon.length; i++) {
-        canvas.drawArc({
-          fillStyle: "black",
-          strokeStyle: "black",
-          x: polygon[i].x,
-          y: polygon[i].y,
-          radius: 5
-        });
+        drawCircle(polygon[i].x, polygon[i].y, "black");
       }
       //Draw the lines connecting them
       renderLine(polygon, {
@@ -104,3 +98,12 @@ function render() {
   renderPolygons();
 }
 
+function drawCircle(x, y, color) {
+  canvas.drawArc({
+    fillStyle: color,
+    strokeStyle: "black",
+    x: x,
+    y: y,
+    radius: 5
+  });
+}

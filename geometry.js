@@ -219,7 +219,7 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
       }
     }
   }
-  console.log("From index is", fromIndex, "polygon", polygon);
+  console.log("From index is", fromIndex, "isClockwise", isClockwise, "polygon", polygon);
   console.assert(minIndex !== fromIndex);
   console.assert(minIndex >= 0);
   console.assert(polygon.normalizeIndex(minIndex + 1) !== fromIndex);
@@ -244,17 +244,20 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
       var diagonal = new Point(polygon[i].x - polygon[fromIndex].x,
                             polygon[i].y - polygon[fromIndex].y);
       var angle = diagonal.normalize().dotProduct(rayUnitVector);
+      if(!isClockwise) {
+        if(angle > 0)
+          angle = 1 - angle;
+        else
+          angle = -1 - angle;
+      }
       console.log("angle is " + angle + " for index " + i);
-      if(angle >= 0) {
-        if(angle > closestAngles[1]) {
-          closestAngles[1] = angle;
-          closestIndexes[1] = i;
-        }
-      } else {
-        if(angle < closestAngles[0]) {
-          closestAngles[0] = angle;
-          closestIndexes[0] = i;
-        }
+      if(angle > closestAngles[1]) {
+        closestAngles[1] = angle;
+        closestIndexes[1] = i;
+      }
+      if(angle < closestAngles[0]) {
+        closestAngles[0] = angle;
+        closestIndexes[0] = i;
       }
     }
   }

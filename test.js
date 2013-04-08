@@ -24,8 +24,28 @@ function runTests() {
                        [345,159],
                        [356,102],
                        [184,132]];
+  var triangulation3 = [[198,362],
+                        [624,268],
+                        [403,126],
+                        [354,216],
+                        [241,83],
+                        [617,71],
+                        [550,138],
+                        [683,50],
+                        [74,44],
+                        [285,290],
+                        [46,330],
+                        [543,443],
+                        [198,362]];
+  var triangulation4 = [[169,384],
+                        [406,328],
+                        [51,324],
+                        [141,442],
+                        [268,403],
+                        [263,372],
+                        [169,384]];
   //segmentIntersectionTest();
-  triangulationTest(triangulation2);
+  triangulationTest(triangulation4);
   return true;
 }
 
