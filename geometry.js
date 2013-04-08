@@ -158,9 +158,7 @@ function isEar(polygon, vertexIndex, isClockwise) {
   var next = nextPoint(polygon, vertexIndex);
   var v = polygon[vertexIndex];
   var triangle = [prev, v, next];
-  //console.log(triangle);
   for(var i=0; i<polygon.length - 3; i++) {
-    //console.log(polygon.get(i + 2 + vertexIndex));
     if(pointIsInsideTriangle(polygon.get(i + 2 + vertexIndex), triangle)) {
       return false;
     }
@@ -187,30 +185,28 @@ function segmentIntersectsPolygon(polygon, seg) {
   return false;
 }
 
-function makeDiagonal(polygon, i, isClockwise) {
+function makeDiagonal(polygon, fromIndex, isClockwise) {
   assert(polygon.length > 3);
-  var rayVector = bisectingAngleUnitVector(polygon.get(i-1), polygon[i], polygon.get(i+1));
+  var rayVector = bisectingAngleUnitVector(polygon.get(fromIndex-1), polygon[fromIndex], polygon.get(fromIndex+1));
   rayVector = rayVector.scalarMult(1e4); //TODO make 1e6
-  if(isReflexVertex(polygon, i, isClockwise)) {
+  if(isReflexVertex(polygon, fromIndex, isClockwise)) {
     console.log("We have a reflex vertex");
     rayVector = rayVector.scalarMult(-1); //Flip by 180 degrees
   }
-  var ray = new LineSegment(polygon[i], polygon[i].add(rayVector));
+  var ray = new LineSegment(polygon[fromIndex], polygon[fromIndex].add(rayVector));
   //Shoot that ray and find the first point that it hits
-  var endingIndex = i - 1;
+  var endingIndex = fromIndex - 1;
   while(endingIndex < 0)
     endingIndex += polygon.length;
   var minimumDistance = Number.MAX_VALUE;
   var minIndex = -1;
   for(var j=0; j<polygon.length - 2; j++) {
-    var index = polygon.normalizeIndex(j + i + 1);
-    assert(index !== i);
+    var index = polygon.normalizeIndex(j + fromIndex + 1);
+    assert(index !== fromIndex);
     var seg = new LineSegment(polygon[index], nextPoint(polygon, index));
     if(lineSegmentsIntersect(seg, ray)) {
       var intersection = getLineSegmentIntersection(seg, ray);
-      console.log("The intersection: ");
-      console.log(intersection);
-      var distance = distanceSquared(polygon[i], intersection);
+      var distance = distanceSquared(polygon[fromIndex], intersection);
       assert(!isNaN(distance));
       if(distance < minimumDistance) {
         minimumDistance = distance;
@@ -218,34 +214,42 @@ function makeDiagonal(polygon, i, isClockwise) {
       }
     }
   }
-  assert(minIndex != i);
-  var triangle = [polygon[minIndex], polygon.get(minIndex + 1), polygon[i]];
-  console.log(triangle);
-  //Sweep this line in both directions
-  var closestIndexes = [55, 55];
-  var closestAngles  = [Number.MIN_VALUE, Number.MAX_VALUE];
+  assert(minIndex != fromIndex && minIndex >= 0);
+  var triangle = [polygon[minIndex], polygon.get(minIndex + 1),
+  polygon[fromIndex]];
+  //Sweep this line in both directions radially (but only stuff we can see)
+  var closestIndexes = [-1, -1];
+  var closestAngles  = [-Number.MAX_VALUE, Number.MAX_VALUE];
+  function pointIsOnOrInsideTriangle(index) {
+    for(var j=0; j<3; j++) {
+      if(triangle[j].equals(polygon[index]))
+        return true;
+    }
+    return pointIsInsideTriangle(polygon[index], triangle);
+  }
+  //Test every possible segment
+  var rayAngle = Math.atan(polygon[minIndex].y - polygon[fromIndex].y,
+                           polygon[minIndex].x - polygon[fromIndex].x);
+  //rayangle is wrong
   for(var j=0; j<polygon.length - 1; j++) {
-    var index = polygon.normalizeIndex(j + i);
-    if(pointIsInsideTriangle(polygon[index], triangle)) {
-      var angle = Math.atan((polygon[index].y - polygon[i].y)/
-          (polygon[index].x - polygon[i].x));
-      if(angle >= 0) {
+    var i = polygon.normalizeIndex(j + fromIndex + 1);
+    if(pointIsOnOrInsideTriangle(i)) {
+      var angle = Math.atan(polygon[minIndex].y - polygon[i].y,
+                            polygon[minIndex].x - polygon[i].x) - rayAngle;
+      if(angle >= Math.PI/2) {
         if(angle < closestAngles[1]) {
           closestAngles[1] = angle;
-          closestIndexes[1] = index;
+          closestIndexes[1] = i;
         }
       } else {
         if(angle > closestAngles[0]) {
           closestAngles[0] = angle;
-          closestIndexes[0] = index;
+          closestIndexes[0] = i;
         }
       }
-    } else {
-      console.log("the point not inside the triangle is: ");
-      console.log(polygon[index]);
     }
   }
-  if(closestIndexes[0] === (i + 1) % polygon.length ||
+  if(closestIndexes[0] === (fromIndex + 1) % polygon.length ||
       closestIndexes[0] === endingIndex) {
     return closestIndexes[1];
   }
@@ -279,7 +283,7 @@ function findEar(polygon, isClockwise) {
   var diagonalIndex = makeDiagonal(polygon, medianIndex, isClockwise);
   console.log("the median point: ")
   console.log(polygon[medianIndex]);
-  console.log("the diagonal point: ");
+  console.log("the diagonal point (with index " + diagonalIndex + "):");
   console.log(polygon[diagonalIndex]);
   //TODO: finish this
   return null;
