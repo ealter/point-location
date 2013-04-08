@@ -214,7 +214,8 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
       }
     }
   }
-  assert(minIndex != fromIndex && minIndex >= 0);
+  assert(minIndex !== fromIndex);
+  assert(minIndex >= 0);
   var triangle = [polygon[minIndex], polygon.get(minIndex + 1),
   polygon[fromIndex]];
   //Sweep this line in both directions radially (but only stuff we can see)
@@ -268,31 +269,51 @@ function pointIsInsideTriangle(p, triangle) {
   }
 }
 
-function findEar(polygon, isClockwise) {
-  //var medianIndex = Math.floor(polygon.length / 2);
-  var medianIndex = 0;
-  if(isEar(polygon, medianIndex, isClockwise)) {
-    console.log("We found an ear");
-    console.log(polygon[medianIndex]);
-    return medianIndex;
-  }
-  if(polygon.length < 3) {
-    console.log("We did not find an ear!!!");
-    return bIndex;
-  }
-  var diagonalIndex = makeDiagonal(polygon, medianIndex, isClockwise);
-  console.log("the median point: ")
-  console.log(polygon[medianIndex]);
-  console.log("the diagonal point (with index " + diagonalIndex + "):");
-  console.log(polygon[diagonalIndex]);
-  //TODO: finish this
-  return null;
-  //return findEar(polygon, medianIndex, eIndex, isClockwise);
+function triangulate(polygon) {
+  var triangles = [];
+  triangulateEarClipping(polygon, triangles);
+  console.log("The triangles are: ");
+  console.log(triangles);
+  return triangles;
 }
 
-function triangulateEarClipping(polygon) {
+function triangulateEarClipping(polygon, triangles) {
+  //see end of http://www.cs.tufts.edu/comp/163/classnotes/3-triangulation.pdf
+  console.log(triangles);
+  if(polygon.length < 3) {
+    console.log("Tried to triangulate a polygon that was smaller than a triangle");
+    return polygon;
+  }
   var isClockwise = isPolygonClockwise(polygon);
-  findEar(polygon, isClockwise);
-  //TODO see end of http://www.cs.tufts.edu/comp/163/classnotes/3-triangulation.pdf
+  var medianIndex = Math.floor(polygon.length / 2);
+  if(isEar(polygon, medianIndex, isClockwise)) {
+    console.log("We found an ear: ", polygon[medianIndex]);
+    var triangle = [polygon[medianIndex], polygon[medianIndex + 1], polygon[medianIndex - 1]];
+    triangles.push(triangle);
+    polygon = polygon.slice(0);
+    polygon.splice(medianIndex, 1);
+    if(polygon.length >= 3) {
+      triangulateEarClipping(polygon, triangles);
+    }
+    return;
+  }
+  var diagonalIndex = makeDiagonal(polygon, medianIndex, isClockwise);
+  assert(diagonalIndex !== medianIndex);
+  if(medianIndex > diagonalIndex) {
+    //Swap values
+    var tmp = medianIndex;
+    medianIndex = diagonalIndex;
+    diagonalIndex = tmp;
+  }
+  var half1 = polygon.slice(0);
+  half1.splice(diagonalIndex + 1);
+  half1.splice(0, medianIndex);
+  console.log("diagonal is ", [polygon[diagonalIndex], polygon[medianIndex]], "polygon is ", polygon, "half1 is ", half1);
+  triangulateEarClipping(half1, triangles);
+
+  var half2 = polygon.slice(0);
+  half2.splice(medianIndex + 1, diagonalIndex - medianIndex - 1);
+  console.log("polygon is ", polygon, "half2 is ", half2, "median:", medianIndex, "diagonal:", diagonalIndex);
+  triangulateEarClipping(half2, triangles);
 }
 

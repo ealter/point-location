@@ -9,24 +9,29 @@ var canvasPosition = {
 
 canvas.on("click", function(e) {
   var mouse = new Point(e.pageX - canvasPosition.x, e.pageY - canvasPosition.y);
-  var p = snapToPoint(mouse, currentPolygon);
+  addPoint(mouse);
+});
+
+function addPoint(p) {
+  p = snapToPoint(p, currentPolygon);
   console.log(p);
   if(canAppendPointToPolygon(currentPolygon, p)) {
     currentPolygon.push(p);
+    render();
     var isFinishingPolygon = currentPolygon.length >= 3 && p.equals(currentPolygon[0]);
     if(isFinishingPolygon) {
       console.log("Finishing polygon");
+      currentPolygon.forEach(function(p) {console.log("[" + p.x + "," + p.y + "],")})
       currentPolygon.pop();
-      //triangulateEarClipping(currentPolygon);
+      renderTriangulation(currentPolygon);
       currentPolygon = [];
       allPolygons.push(currentPolygon);
     }
-    render();
   } else {
     console.log("self intersecting");
     drawTemporarySegment(p, currentPolygon[currentPolygon.length - 1]);
   }
-});
+}
 
 function snapToPoint(p, polygon) {
   //If (x,y) is close to a point on the polygon, it returns that point
@@ -56,30 +61,46 @@ function canAppendPointToPolygon(polygon, p) {
      !segmentIntersectsAnyPolygon(new LineSegment(polygon[polygon.length - 1], p)));
 }
 
-function render() {
-  canvas.clearCanvas();
-    console.log(allPolygons);
-  allPolygons.forEach(function (polygon) {
-    for(var i=0; i<polygon.length; i++) {
-      canvas.drawArc({
-        fillStyle: "black",
-        strokeStyle: "black",
-        x: polygon[i].x,
-        y: polygon[i].y,
-        radius: 5
-      });
-    }
-    //Draw the lines connecting them
-    var line = {
-      strokeStyle: "black",
-      strokeWidth: 1,
-      closed: polygon !== currentPolygon
-    };
-    for(var i=0; i<polygon.length; i++) {
-      line['x' + (i+1)] = polygon[i].x;
-      line['y' + (i+1)] = polygon[i].y;
-    }
-    canvas.drawLine(line);
+function renderTriangulation(polygon) {
+  var triangles = triangulate(currentPolygon);
+  triangles.forEach(function (triangle) {
+    renderLine(triangle, {
+      strokeStyle: "gray"
+    });
   });
+}
+
+function renderLine(points, options) {
+  options.strokeStyle = options.strokeStyle || "black";
+  if(typeof options.strokeWidth === 'undefined')
+    options.strokeWidth = 1;
+  for(var i=0; i<points.length; i++) {
+    options['x' + (i+1)] = points[i].x;
+    options['y' + (i+1)] = points[i].y;
+  }
+  canvas.drawLine(options);
+}
+
+function render() {
+  function renderPolygons() {
+    allPolygons.forEach(function (polygon) {
+      for(var i=0; i<polygon.length; i++) {
+        canvas.drawArc({
+          fillStyle: "black",
+          strokeStyle: "black",
+          x: polygon[i].x,
+          y: polygon[i].y,
+          radius: 5
+        });
+      }
+      //Draw the lines connecting them
+      renderLine(polygon, {
+        closed: polygon !== currentPolygon
+      });
+    });
+  }
+
+  canvas.clearCanvas();
+  renderPolygons();
 }
 
