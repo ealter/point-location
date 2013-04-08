@@ -22,9 +22,3 @@ function isApproxEqual(a, b) {
   return (a + epsilon >= b) && (a - epsilon <= b);
 }
 
-function assert(b) {
-  if(!b) {
-    throw "Assertion Failure";
-  }
-}
-

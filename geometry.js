@@ -37,9 +37,12 @@ Point.prototype.normalize = function() {
   return this.scalarDiv(Math.sqrt(this.x * this.x + this.y * this.y));
 };
 
+Point.prototype.dotProduct = function(p) {
+  return this.x * p.x + this.y * p.y;
+}
 
 function LineSegment(p1, p2) {
-  assert(typeof p1 === "object" && typeof p2 === "object");
+  console.assert(typeof p1 === "object" && typeof p2 === "object");
   this.p1 = p1;
   this.p2 = p2;
 }
@@ -91,7 +94,7 @@ function getLineSegmentIntersection(s1, s2) {
   var r = s1.p2.sub(s1.p1);
   var s = s2.p2.sub(s2.p1);
   var rs = crossProduct(PointZero, r, PointZero, s);
-  assert(!isApproxEqual(rs, 0));
+  console.assert(!isApproxEqual(rs, 0));
 
   //Parametric values
   var t = crossProduct(PointZero, s2.p1.sub(s1.p1), PointZero, s)/rs;
@@ -120,11 +123,11 @@ function isReflexVertex(polygon, i, isClockwise) {
   if(polygon.length < 4) {
     return false;
   }
-  assert(typeof isClockwise === 'boolean');
+  console.assert(typeof isClockwise === 'boolean');
   var v = polygon[i];
   var prev = previousPoint(polygon, i);
   var next = nextPoint(polygon, i);
-  assert(v && prev && next);
+  console.assert(v && prev && next);
   if(isRightTurn(prev, v, next))
     return isClockwise;
   else
@@ -186,9 +189,9 @@ function segmentIntersectsPolygon(polygon, seg) {
 }
 
 function makeDiagonal(polygon, fromIndex, isClockwise) {
-  assert(polygon.length > 3);
+  console.assert(polygon.length > 3);
   var rayVector = bisectingAngleUnitVector(polygon.get(fromIndex-1), polygon[fromIndex], polygon.get(fromIndex+1));
-  rayVector = rayVector.scalarMult(1e4); //TODO make 1e6
+  rayVector = rayVector.scalarMult(1e6);
   if(isReflexVertex(polygon, fromIndex, isClockwise)) {
     console.log("We have a reflex vertex");
     rayVector = rayVector.scalarMult(-1); //Flip by 180 degrees
@@ -200,27 +203,30 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
     endingIndex += polygon.length;
   var minimumDistance = Number.MAX_VALUE;
   var minIndex = -1;
+  var minIntersection = PointZero;
   for(var j=0; j<polygon.length - 2; j++) {
     var index = polygon.normalizeIndex(j + fromIndex + 1);
-    assert(index !== fromIndex);
+    console.assert(index !== fromIndex);
     var seg = new LineSegment(polygon[index], nextPoint(polygon, index));
     if(lineSegmentsIntersect(seg, ray)) {
       var intersection = getLineSegmentIntersection(seg, ray);
       var distance = distanceSquared(polygon[fromIndex], intersection);
-      assert(!isNaN(distance));
+      console.assert(!isNaN(distance));
       if(distance < minimumDistance) {
         minimumDistance = distance;
         minIndex = index;
+        minIntersection = intersection;
       }
     }
   }
-  assert(minIndex !== fromIndex);
-  assert(minIndex >= 0);
-  var triangle = [polygon[minIndex], polygon.get(minIndex + 1),
-  polygon[fromIndex]];
+  console.log("From index is", fromIndex, "polygon", polygon);
+  console.assert(minIndex !== fromIndex);
+  console.assert(minIndex >= 0);
+  console.assert(polygon.normalizeIndex(minIndex + 1) !== fromIndex);
+  var triangle = [polygon[minIndex], polygon.get(minIndex + 1), polygon[fromIndex]];
   //Sweep this line in both directions radially (but only stuff we can see)
   var closestIndexes = [-1, -1];
-  var closestAngles  = [-Number.MAX_VALUE, Number.MAX_VALUE];
+  var closestAngles  = [Number.MAX_VALUE, -Number.MAX_VALUE];
   function pointIsOnOrInsideTriangle(index) {
     for(var j=0; j<3; j++) {
       if(triangle[j].equals(polygon[index]))
@@ -229,28 +235,32 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
     return pointIsInsideTriangle(polygon[index], triangle);
   }
   //Test every possible segment
-  var rayAngle = Math.atan(polygon[minIndex].y - polygon[fromIndex].y,
-                           polygon[minIndex].x - polygon[fromIndex].x);
-  //rayangle is wrong
+  var rayUnitVector = new Point(minIntersection.y - polygon[fromIndex].y,
+                                minIntersection.x - polygon[fromIndex].x)
+                      .normalize();
   for(var j=0; j<polygon.length - 1; j++) {
     var i = polygon.normalizeIndex(j + fromIndex + 1);
     if(pointIsOnOrInsideTriangle(i)) {
-      var angle = Math.atan(polygon[minIndex].y - polygon[i].y,
-                            polygon[minIndex].x - polygon[i].x) - rayAngle;
-      if(angle >= Math.PI/2) {
-        if(angle < closestAngles[1]) {
+      var diagonal = new Point(polygon[i].x - polygon[fromIndex].x,
+                            polygon[i].y - polygon[fromIndex].y);
+      var angle = diagonal.normalize().dotProduct(rayUnitVector);
+      console.log("angle is " + angle + " for index " + i);
+      if(angle >= 0) {
+        if(angle > closestAngles[1]) {
           closestAngles[1] = angle;
           closestIndexes[1] = i;
         }
       } else {
-        if(angle > closestAngles[0]) {
+        if(angle < closestAngles[0]) {
           closestAngles[0] = angle;
           closestIndexes[0] = i;
         }
       }
     }
   }
-  if(closestIndexes[0] === (fromIndex + 1) % polygon.length ||
+  console.log("from index", fromIndex, "to index", minIndex, "closest", closestIndexes);
+  console.assert(closestIndexes[0] >= 0 && closestIndexes[1] >= 0);
+  if(closestIndexes[0] === polygon.normalizeIndex(fromIndex + 1) ||
       closestIndexes[0] === endingIndex) {
     return closestIndexes[1];
   }
@@ -259,7 +269,7 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
 
 //Tests whether the point p is inside the triangle
 function pointIsInsideTriangle(p, triangle) {
-  assert(triangle.length === 3);
+  console.assert(triangle.length === 3);
   if(isLeftTurn(triangle[0], triangle[1], p)) {
     return isLeftTurn(triangle[1], triangle[2], p) &&
            isLeftTurn(triangle[2], triangle[0], p);
@@ -279,7 +289,6 @@ function triangulate(polygon) {
 
 function triangulateEarClipping(polygon, triangles) {
   //see end of http://www.cs.tufts.edu/comp/163/classnotes/3-triangulation.pdf
-  console.log(triangles);
   if(polygon.length < 3) {
     console.log("Tried to triangulate a polygon that was smaller than a triangle");
     return polygon;
@@ -298,7 +307,7 @@ function triangulateEarClipping(polygon, triangles) {
     return;
   }
   var diagonalIndex = makeDiagonal(polygon, medianIndex, isClockwise);
-  assert(diagonalIndex !== medianIndex);
+  console.assert(diagonalIndex !== medianIndex);
   if(medianIndex > diagonalIndex) {
     //Swap values
     var tmp = medianIndex;
