@@ -193,7 +193,6 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
   var rayVector = bisectingAngleUnitVector(polygon.get(fromIndex-1), polygon[fromIndex], polygon.get(fromIndex+1));
   rayVector = rayVector.scalarMult(1e6);
   if(isReflexVertex(polygon, fromIndex, isClockwise)) {
-    console.log("We have a reflex vertex");
     rayVector = rayVector.scalarMult(-1); //Flip by 180 degrees
   }
   var ray = new LineSegment(polygon[fromIndex], polygon[fromIndex].add(rayVector));
@@ -219,7 +218,6 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
       }
     }
   }
-  console.log("From index is", fromIndex, "isClockwise", isClockwise, "polygon", polygon);
   console.assert(minIndex !== fromIndex);
   console.assert(minIndex >= 0);
   console.assert(polygon.normalizeIndex(minIndex + 1) !== fromIndex);
@@ -235,33 +233,31 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
     return pointIsInsideTriangle(polygon[index], triangle);
   }
   //Test every possible segment
-  var rayUnitVector = new Point(minIntersection.y - polygon[fromIndex].y,
-                                minIntersection.x - polygon[fromIndex].x)
-                      .normalize();
+  var rayVector = minIntersection.sub(polygon[fromIndex]);
+  var rayAngle = Math.atan2(rayVector.x, rayVector.y);
   for(var j=0; j<polygon.length - 1; j++) {
     var i = polygon.normalizeIndex(j + fromIndex + 1);
     if(pointIsOnOrInsideTriangle(i)) {
-      var diagonal = new Point(polygon[i].x - polygon[fromIndex].x,
-                            polygon[i].y - polygon[fromIndex].y);
-      var angle = diagonal.normalize().dotProduct(rayUnitVector);
-      if(!isClockwise) {
-        if(angle > 0)
-          angle = 1 - angle;
-        else
-          angle = -1 - angle;
-      }
+      var diagonal = polygon[i].sub(polygon[fromIndex]);
+      var angle = Math.atan2(diagonal.x, diagonal.y) - rayAngle;
+      while(angle <= -Math.PI)
+        angle += 2 * Math.PI;
+      while(angle >= Math.PI)
+        angle -= 2 * Math.PI;
       console.log("angle is " + angle + " for index " + i);
+      if(angle < 0) {
       if(angle > closestAngles[1]) {
         closestAngles[1] = angle;
         closestIndexes[1] = i;
       }
+      } else {
       if(angle < closestAngles[0]) {
         closestAngles[0] = angle;
         closestIndexes[0] = i;
       }
+      }
     }
   }
-  console.log("from index", fromIndex, "to index", minIndex, "closest", closestIndexes);
   console.assert(closestIndexes[0] >= 0 && closestIndexes[1] >= 0);
   if(closestIndexes[0] === polygon.normalizeIndex(fromIndex + 1) ||
       closestIndexes[0] === endingIndex) {
@@ -285,8 +281,6 @@ function pointIsInsideTriangle(p, triangle) {
 function triangulate(polygon) {
   var triangles = [];
   triangulateEarClipping(polygon, triangles);
-  console.log("The triangles are: ");
-  console.log(triangles);
   return triangles;
 }
 
@@ -299,7 +293,6 @@ function triangulateEarClipping(polygon, triangles) {
   var isClockwise = isPolygonClockwise(polygon);
   var medianIndex = Math.floor(polygon.length / 2);
   if(isEar(polygon, medianIndex, isClockwise)) {
-    console.log("We found an ear: ", polygon[medianIndex]);
     var triangle = [polygon[medianIndex], polygon[medianIndex + 1], polygon[medianIndex - 1]];
     triangles.push(triangle);
     polygon = polygon.slice(0);
@@ -320,12 +313,10 @@ function triangulateEarClipping(polygon, triangles) {
   var half1 = polygon.slice(0);
   half1.splice(diagonalIndex + 1);
   half1.splice(0, medianIndex);
-  console.log("diagonal is ", [polygon[diagonalIndex], polygon[medianIndex]], "polygon is ", polygon, "half1 is ", half1);
   triangulateEarClipping(half1, triangles);
 
   var half2 = polygon.slice(0);
   half2.splice(medianIndex + 1, diagonalIndex - medianIndex - 1);
-  console.log("polygon is ", polygon, "half2 is ", half2, "median:", medianIndex, "diagonal:", diagonalIndex);
   triangulateEarClipping(half2, triangles);
 }
 

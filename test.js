@@ -1,4 +1,4 @@
-function runTests() {
+function runTests(testNum) {
   function segmentIntersectionTest() {
     var s1 = new LineSegment(new Point(5, 5), new Point(10, 10));
     var s2 = new LineSegment(new Point(7, 5), new Point(6, 10));
@@ -44,8 +44,17 @@ function runTests() {
                         [268,403],
                         [263,372],
                         [169,384]];
+  var triangulation5 = [[519,65],
+                        [300,256],
+                        [276,329],
+                        [140,157],
+                        [483,82],
+                        [470,28],
+                        [519,65]];
   //segmentIntersectionTest();
-  triangulationTest(triangulation4);
+  var triangulations = [triangulation1, triangulation2, triangulation3,
+  triangulation4, triangulation5];
+  triangulationTest(triangulations[testNum]);
   return true;
 }
 
