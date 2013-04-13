@@ -111,22 +111,14 @@ function lineSegmentIntersectsRay(seg, ray) {
   return lineSegmentsIntersect(seg, rayToHugeSegment(ray));
 }
 
-function nextPoint(polygon, i) {
-  return polygon.get(i+1);
-}
-
-function previousPoint(polygon, i) {
-  return polygon.get(i-1);
-}
-
 function isReflexVertex(polygon, i, isClockwise) {
   if(polygon.length < 4) {
     return false;
   }
   console.assert(typeof isClockwise === 'boolean');
   var v = polygon[i];
-  var prev = previousPoint(polygon, i);
-  var next = nextPoint(polygon, i);
+  var prev = polygon.get(i - 1);
+  var next = polygon.get(i + 1);
   console.assert(v && prev && next);
   if(isRightTurn(prev, v, next))
     return isClockwise;
@@ -134,22 +126,21 @@ function isReflexVertex(polygon, i, isClockwise) {
     return !isClockwise;
 }
 
-function indexOfMinX(polygon) {
-  var minX = Number.MAX_VALUE;
-  var minIndex = 0;
-  for(var i=0; i<polygon.length; i++) {
-    if(polygon[i].x <= minX) {
-      minX = polygon[i].x;
-      minIndex = i;
-    }
-  }
-  return minIndex;
-}
-
 function isPolygonClockwise(polygon) {
+  function indexOfMinX(polygon) {
+    var minX = Number.MAX_VALUE;
+    var minIndex = 0;
+    for(var i=0; i<polygon.length; i++) {
+      if(polygon[i].x <= minX) {
+        minX = polygon[i].x;
+        minIndex = i;
+      }
+    }
+    return minIndex;
+  }
   var minIndex = indexOfMinX(polygon);
   var prev = polygon.get(minIndex - 1);
-  var next = nextPoint(polygon, minIndex);
+  var next = polygon.get(minIndex + 1);
   var v = polygon[minIndex];
   return isLeftTurn(prev, v, next);
 }
@@ -157,8 +148,8 @@ function isPolygonClockwise(polygon) {
 function isEar(polygon, vertexIndex, isClockwise) {
   if(isReflexVertex(polygon, vertexIndex, isClockwise))
     return false;
-  var prev = previousPoint(polygon, vertexIndex);
-  var next = nextPoint(polygon, vertexIndex);
+  var prev = polygon.get(vertexIndex - 1);
+  var next = polygon.get(vertexIndex + 1);
   var v = polygon[vertexIndex];
   var triangle = [prev, v, next];
   for(var i=0; i<polygon.length - 3; i++) {
@@ -206,7 +197,7 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
   for(var j=0; j<polygon.length - 2; j++) {
     var index = polygon.normalizeIndex(j + fromIndex + 1);
     console.assert(index !== fromIndex);
-    var seg = new LineSegment(polygon[index], nextPoint(polygon, index));
+    var seg = new LineSegment(polygon[index], polygon.get(index + 1));
     if(lineSegmentsIntersect(seg, ray)) {
       var intersection = getLineSegmentIntersection(seg, ray);
       var distance = distanceSquared(polygon[fromIndex], intersection);
