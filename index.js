@@ -29,15 +29,18 @@ function addPoint(p) {
   console.log(p);
   if(canAppendPointToPolygon(currentPolygon, p)) {
     currentPolygon.push(p);
-    render();
     var isFinishingPolygon = currentPolygon.length >= 3 && p.equals(currentPolygon[0]);
     if(isFinishingPolygon) {
       console.log("Finishing polygon");
       currentPolygon.forEach(function(p) {console.log("[" + p.x + "," + p.y + "],")})
       currentPolygon.pop();
-      renderTriangulation(currentPolygon);
       currentPolygon = [];
       allPolygons.push(currentPolygon);
+    }
+    render();
+    if(isFinishingPolygon) {
+      console.log(allPolygons[allPolygons.length - 2]);
+      renderTriangulation(allPolygons[allPolygons.length - 2]);
     }
   } else {
     console.log("self intersecting");
@@ -74,7 +77,7 @@ function canAppendPointToPolygon(polygon, p) {
 }
 
 function renderTriangulation(polygon) {
-  var triangles = triangulate(currentPolygon);
+  var triangles = triangulate(polygon);
   triangles.forEach(function (triangle) {
     renderLine(triangle, {
       strokeStyle: "gray"
@@ -97,7 +100,10 @@ function render() {
   function renderPolygons() {
     allPolygons.forEach(function (polygon) {
       for(var i=0; i<polygon.length; i++) {
-        drawCircle(polygon[i].x, polygon[i].y, "black");
+        var color = "black";
+        if(polygon === currentPolygon && i == polygon.length - 1)
+          color = "blue";
+        drawCircle(polygon[i].x, polygon[i].y, color);
       }
       //Draw the lines connecting them
       renderLine(polygon, {
