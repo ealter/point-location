@@ -7,9 +7,21 @@ var canvasPosition = {
     y: canvas.offset().top
 };
 
+var mainTriangle = [new Point(0, canvas.height() - 2),
+                    new Point(canvas.width() - 1, canvas.height() - 2),
+                    new Point(canvas.width()/2, 0)];
+
+$(function() {
+  render();
+});
+
 canvas.on("click", function(e) {
   var mouse = new Point(e.pageX - canvasPosition.x, e.pageY - canvasPosition.y);
-  addPoint(mouse);
+  if(pointIsInsideTriangle(mouse, mainTriangle)) {
+    addPoint(mouse);
+  } else {
+    console.log("Point is outside the main triangle"); //TODO: user facing error message
+  }
 });
 
 function addPoint(p) {
@@ -96,6 +108,11 @@ function render() {
 
   canvas.clearCanvas();
   renderPolygons();
+  renderLine(mainTriangle, {
+    closed: true,
+    strokeStyle: "brown",
+    strokeWidth: 4
+  });
 }
 
 function drawCircle(x, y, color) {
