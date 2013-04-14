@@ -39,7 +39,11 @@ Point.prototype.normalize = function() {
 
 Point.prototype.dotProduct = function(p) {
   return this.x * p.x + this.y * p.y;
-}
+};
+
+Point.prototype.hash = function() {
+  return Math.floor(this.x * canvas.width() + this.y);
+};
 
 function LineSegment(p1, p2) {
   console.assert(typeof p1 === "object" && typeof p2 === "object");
@@ -126,18 +130,20 @@ function isReflexVertex(polygon, i, isClockwise) {
     return !isClockwise;
 }
 
-function isPolygonClockwise(polygon) {
-  function indexOfMinX(polygon) {
-    var minX = Number.MAX_VALUE;
-    var minIndex = 0;
-    for(var i=0; i<polygon.length; i++) {
-      if(polygon[i].x <= minX) {
-        minX = polygon[i].x;
-        minIndex = i;
-      }
+function indexOfMinX(polygon) {
+  var minX = Number.MAX_VALUE;
+  var minIndex = 0;
+  for(var i=0; i<polygon.length; i++) {
+    if(polygon[i].x < minX || (polygon[i].x == polygon[minIndex].x &&
+                               polygon[i].y < polygon[minIndex].y)) {
+      minX = polygon[i].x;
+      minIndex = i;
     }
-    return minIndex;
   }
+  return minIndex;
+}
+
+function isPolygonClockwise(polygon) {
   var minIndex = indexOfMinX(polygon);
   var prev = polygon.get(minIndex - 1);
   var next = polygon.get(minIndex + 1);
@@ -237,15 +243,15 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
         angle -= 2 * Math.PI;
       console.log("angle is " + angle + " for index " + i);
       if(angle < 0) {
-      if(angle > closestAngles[1]) {
-        closestAngles[1] = angle;
-        closestIndexes[1] = i;
-      }
-      } else {
-      if(angle < closestAngles[0]) {
-        closestAngles[0] = angle;
-        closestIndexes[0] = i;
-      }
+        if(angle > closestAngles[1]) {
+          closestAngles[1] = angle;
+          closestIndexes[1] = i;
+        }
+        } else {
+        if(angle < closestAngles[0]) {
+          closestAngles[0] = angle;
+          closestIndexes[0] = i;
+        }
       }
     }
   }
@@ -279,7 +285,8 @@ function triangulateEarClipping(polygon, triangles) {
   //see end of http://www.cs.tufts.edu/comp/163/classnotes/3-triangulation.pdf
   if(polygon.length < 3) {
     console.log("Tried to triangulate a polygon that was smaller than a triangle");
-    return polygon;
+    console.log(polygon);
+    return;
   }
   var isClockwise = isPolygonClockwise(polygon);
   var medianIndex = Math.floor(polygon.length / 2);
@@ -310,4 +317,43 @@ function triangulateEarClipping(polygon, triangles) {
   half2.splice(medianIndex + 1, diagonalIndex - medianIndex - 1);
   triangulateEarClipping(half2, triangles);
 }
+
+function trianglesOutsidePolygon(polygon, outerTriangle) {
+  //find the convex hull of the pointset,
+  //triangulate each pocket, and then triangulate the outer pocket.
+
+  //TODO
+}
+
+//Finds the convex hull of a polygon using a graham scan
+function convexHull(polygon) {
+  var extremeIndex = indexOfMinX(polygon);
+  var sortedPoints = polygon.slice(0);
+  sortedPoints.splice(extremeIndex, 1);
+  for(var i=0; i<sortedPoints.length; i++) {
+    var vector = sortedPoints[i].sub(polygon[extremeIndex]);
+    sortedPoints[i].angle = Math.atan2(vector.y, vector.x);
+  }
+
+  //Sort the points radially counter-clockwise
+  sortedPoints.sort(function (p1, p2) {
+    return p2.angle - p1.angle;
+  });
+  var hull = [polygon[extremeIndex]];
+  var i = 0;
+  while(i < sortedPoints.length) {
+    if(hull.length < 2 || isRightTurn(hull[hull.length - 2], hull[hull.length - 1], sortedPoints[i])) {
+      hull.push(sortedPoints[i]);
+      i++;
+    } else {
+      hull.pop();
+      console.log("current hull:", hull);
+      console.assert(hull.length >= 1);
+      if(hull.length < 1)
+        throw "Infinite loop";
+    }
+  }
+  return hull;
+}
+
 

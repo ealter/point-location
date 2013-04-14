@@ -51,9 +51,17 @@ function runTests(testNum) {
                         [483,82],
                         [470,28],
                         [519,65]];
+  var triangulation6 = [[216,351],
+                        [307,293],
+                        [335,423],
+                        [469,339],
+                        [413,264],
+                        [327,193],
+                        [318,238],
+                        [216,351]]; //This test fails because of no general position
   //segmentIntersectionTest();
   var triangulations = [triangulation1, triangulation2, triangulation3,
-  triangulation4, triangulation5];
+  triangulation4, triangulation5, triangulation6];
   triangulationTest(triangulations[testNum]);
   return true;
 }

@@ -39,8 +39,14 @@ function addPoint(p) {
     }
     render();
     if(isFinishingPolygon) {
-      console.log(allPolygons[allPolygons.length - 2]);
-      renderTriangulation(allPolygons[allPolygons.length - 2]);
+      var polygon = allPolygons[allPolygons.length - 2];
+      console.log(polygon);
+      renderTriangulation(polygon);
+      var hull = convexHull(polygon);
+      renderLine(hull, {
+        strokeStyle: "blue",
+        closed: true
+      });
     }
   } else {
     console.log("self intersecting");
