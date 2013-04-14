@@ -327,48 +327,109 @@ function trianglesOutsidePolygon(polygon, outerTriangle) {
     return triangulate(pocket);
   }
 
+  function triangulateAllPockets(polygon, hull) {
+    //Find the index of the first hull point
+    var firstPointInHull = -1;
+    for(var i=0; i<polygon.length; i++) {
+      if(polygon[i].equals(hull[0]))
+        firstPointInHull = i;
+    }
+    console.assert(firstPointInHull >= 0);
+
+    var triangles = [];
+    var pointOffset = 0;
+    var beginPocket = 0;
+    var isInsidePocket = false;
+    var hullIndex = 0;
+    console.assert(polygon[firstPointInHull].equals(hull[hullIndex]));
+    while(pointOffset < polygon.length) {
+      var i = polygon.normalizeIndex(pointOffset + firstPointInHull);
+      if(polygon[i].equals(hull[hullIndex])) {
+        if(isInsidePocket) {
+          triangles = triangles.concat(triangulatePocket(beginPocket, i));
+        }
+        isInsidePocket = false;
+        hullIndex = (hullIndex + 1) % hull.length;
+      } else {
+        if(!isInsidePocket) {
+          isInsidePocket = true;
+          beginPocket = polygon.normalizeIndex(i - 1);
+        }
+      }
+      pointOffset++;
+      if(pointOffset < polygon.length) {
+        console.assert(hullIndex < hull.length);
+      }
+    }
+    if(isInsidePocket) {
+      triangles = triangles.concat(triangulatePocket(beginPocket, firstPointInHull));
+    }
+    return triangles;
+  }
+
+  function tangentIndexes(origin, hull) {
+    //Calculates the 2 points that are tangent to the hull from the "origin"
+    //Precondition: the origin is outside of the hull
+    shootRaysFromPointToPolygon(hull, origin);
+    var referenceAngle = hull[0].angle;
+    var minIndex = 0;
+    var maxIndex = 0;
+    for(var i=0; i<hull.length; i++) {
+      hull[i].angle -= referenceAngle;
+      if(hull[i].angle < -Math.PI)
+        hull[i].angle += 2 * Math.PI;
+      else if(hull[i].angle > Math.PI)
+        hull[i].angle -= 2 * Math.PI;
+
+      if(hull[i].angle < hull[minIndex].angle) {
+        minIndex = i;
+      }
+      if(hull[i].angle > hull[maxIndex].angle) {
+        maxIndex = i;
+      }
+    }
+    console.assert(minIndex !== maxIndex);
+    return [minIndex, maxIndex];
+  }
+
   //find the convex hull of the pointset,
   //triangulate each pocket, and then triangulate the outer pocket.
-
+  console.assert(outerTriangle.length === 3);
   var hull = convexHull(polygon);
-
-  //Find the index of the first hull point
-  var firstPointInHull = -1;
-  for(var i=0; i<polygon.length; i++) {
-    if(polygon[i].equals(hull[0]))
-      firstPointInHull = i;
-  }
-  console.assert(firstPointInHull >= 0);
-
-  var triangles = [];
-  var pointOffset = 0;
-  var beginPocket = 0;
-  var isInsidePocket = false;
-  var hullIndex = 0;
-  console.assert(polygon[firstPointInHull].equals(hull[hullIndex]));
-  while(pointOffset < polygon.length) {
-    var i = polygon.normalizeIndex(pointOffset + firstPointInHull);
-    if(polygon[i].equals(hull[hullIndex])) {
-      if(isInsidePocket) {
-        triangles = triangles.concat(triangulatePocket(beginPocket, i));
-      }
-      isInsidePocket = false;
-      hullIndex = (hullIndex + 1) % hull.length;
+  var triangles = triangulateAllPockets(polygon, hull);
+  for(var i=0; i<outerTriangle.length; i++) {
+    var tangents = tangentIndexes(outerTriangle[i], hull);
+    //If the polygon is counterclockwise then go from tangents[0] to tangents[1]
+    //If the polygon is clockwise        then go from tangents[1] to tangents[0]
+    if(isPolygonClockwise(hull)) {
+      tangents = [tangents[1], tangents[0]];
+    }
+    var newHull = hull.slice(0);
+    if(tangents[0] < tangents[1]) {
+      //Remove elements in between
+      newHull.splice(tangents[0] + 1, tangents[1] - tangents[0] - 1, outerTriangle[i]);
     } else {
-      if(!isInsidePocket) {
-        isInsidePocket = true;
-        beginPocket = polygon.normalizeIndex(i - 1);
-      }
+      //Remove elements at the beginning and end of the array
+      newHull.splice(tangents[0] + 1, hull.length, outerTriangle[i]);
+      newHull.splice(0, tangents[1]);
     }
-    pointOffset++;
-    if(pointOffset < polygon.length) {
-      console.assert(hullIndex < hull.length);
+    var numElementsRemoved = hull.length - newHull.length + 1;
+    for(var j=0; j<numElementsRemoved + 1; j++) {
+      var triangle = [hull.get(tangents[0] + j),
+                      hull.get(tangents[0] + j + 1),
+                      outerTriangle[i]];
+      triangles.push(triangle);
     }
-  }
-  if(isInsidePocket) {
-    triangles = triangles.concat(triangulatePocket(beginPocket, firstPointInHull));
+    hull = newHull;
   }
   return triangles;
+}
+
+function shootRaysFromPointToPolygon(polygon, p) {
+  for(var i=0; i<polygon.length; i++) {
+    var vector = polygon[i].sub(p);
+    polygon[i].angle = Math.atan2(vector.y, vector.x);
+  }
 }
 
 //Finds the convex hull of a polygon using a graham scan
@@ -376,10 +437,7 @@ function convexHull(polygon) {
   var extremeIndex = indexOfMinX(polygon);
   var sortedPoints = polygon.slice(0);
   sortedPoints.splice(extremeIndex, 1);
-  for(var i=0; i<sortedPoints.length; i++) {
-    var vector = sortedPoints[i].sub(polygon[extremeIndex]);
-    sortedPoints[i].angle = Math.atan2(vector.y, vector.x);
-  }
+  shootRaysFromPointToPolygon(sortedPoints, polygon[extremeIndex]);
 
   //Sort the points radially counter-clockwise
   sortedPoints.sort(function (p1, p2) {
@@ -407,5 +465,4 @@ function convexHull(polygon) {
   }
   return hull;
 }
-
 

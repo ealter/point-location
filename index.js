@@ -40,7 +40,6 @@ function addPoint(p) {
     render();
     if(isFinishingPolygon) {
       var polygon = allPolygons[allPolygons.length - 2];
-      console.log(polygon);
       //renderTriangulation(triangulate(polygon));
       renderTriangulation(trianglesOutsidePolygon(polygon, mainTriangle), "blue");
       //trianglesOutsidePolygon(polygon, mainTriangle);
