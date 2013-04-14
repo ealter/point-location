@@ -41,12 +41,9 @@ function addPoint(p) {
     if(isFinishingPolygon) {
       var polygon = allPolygons[allPolygons.length - 2];
       console.log(polygon);
-      renderTriangulation(polygon);
-      var hull = convexHull(polygon);
-      renderLine(hull, {
-        strokeStyle: "blue",
-        closed: true
-      });
+      //renderTriangulation(triangulate(polygon));
+      renderTriangulation(trianglesOutsidePolygon(polygon, mainTriangle), "blue");
+      //trianglesOutsidePolygon(polygon, mainTriangle);
     }
   } else {
     console.log("self intersecting");
@@ -82,11 +79,11 @@ function canAppendPointToPolygon(polygon, p) {
      !segmentIntersectsAnyPolygon(new LineSegment(polygon[polygon.length - 1], p)));
 }
 
-function renderTriangulation(polygon) {
-  var triangles = triangulate(polygon);
+function renderTriangulation(triangles, color) {
   triangles.forEach(function (triangle) {
     renderLine(triangle, {
-      strokeStyle: "gray"
+      strokeStyle: color,
+      closed: true
     });
   });
 }

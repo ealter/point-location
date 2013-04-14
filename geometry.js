@@ -241,7 +241,6 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
         angle += 2 * Math.PI;
       while(angle >= Math.PI)
         angle -= 2 * Math.PI;
-      console.log("angle is " + angle + " for index " + i);
       if(angle < 0) {
         if(angle > closestAngles[1]) {
           closestAngles[1] = angle;
@@ -319,10 +318,57 @@ function triangulateEarClipping(polygon, triangles) {
 }
 
 function trianglesOutsidePolygon(polygon, outerTriangle) {
+  function triangulatePocket(beginIndex, endIndex) {
+    if(endIndex > beginIndex) {
+      var pocket = polygon.slice(beginIndex, endIndex + 1);
+    } else {
+      var pocket = polygon.slice(beginIndex).concat(polygon.slice(0, endIndex + 1));
+    }
+    return triangulate(pocket);
+  }
+
   //find the convex hull of the pointset,
   //triangulate each pocket, and then triangulate the outer pocket.
 
-  //TODO
+  var hull = convexHull(polygon);
+
+  //Find the index of the first hull point
+  var firstPointInHull = -1;
+  for(var i=0; i<polygon.length; i++) {
+    if(polygon[i].equals(hull[0]))
+      firstPointInHull = i;
+  }
+  console.assert(firstPointInHull >= 0);
+
+  var triangles = [];
+  var pointOffset = 0;
+  var beginPocket = 0;
+  var isInsidePocket = false;
+  var hullIndex = 0;
+  console.assert(polygon[firstPointInHull].equals(hull[hullIndex]));
+  while(pointOffset < polygon.length) {
+    var i = polygon.normalizeIndex(pointOffset + firstPointInHull);
+    if(polygon[i].equals(hull[hullIndex])) {
+      if(isInsidePocket) {
+        triangles = triangles.concat(triangulatePocket(beginPocket, i));
+      }
+      isInsidePocket = false;
+      hullIndex = (hullIndex + 1) % hull.length;
+    } else {
+      if(!isInsidePocket) {
+        isInsidePocket = true;
+        beginPocket = polygon.normalizeIndex(i - 1);
+      }
+    }
+    pointOffset++;
+    if(pointOffset < polygon.length) {
+      console.assert(hullIndex < hull.length);
+    }
+  }
+  if(isInsidePocket) {
+    triangles = triangles.concat(triangulatePocket(beginPocket, firstPointInHull));
+  }
+  return triangles;
 }
 
 //Finds the convex hull of a polygon using a graham scan
@@ -339,6 +385,9 @@ function convexHull(polygon) {
   sortedPoints.sort(function (p1, p2) {
     return p2.angle - p1.angle;
   });
+  for(var i=0; i<sortedPoints.length; i++) {
+    delete sortedPoints[i].angle;
+  }
   var hull = [polygon[extremeIndex]];
   var i = 0;
   while(i < sortedPoints.length) {
@@ -347,11 +396,14 @@ function convexHull(polygon) {
       i++;
     } else {
       hull.pop();
-      console.log("current hull:", hull);
       console.assert(hull.length >= 1);
       if(hull.length < 1)
         throw "Infinite loop";
     }
+  }
+  var hullIsClockwise = isPolygonClockwise(hull);
+  if(isPolygonClockwise(polygon) != hullIsClockwise) {
+    hull.reverse();
   }
   return hull;
 }
