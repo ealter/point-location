@@ -43,27 +43,45 @@ function addPoint(p) {
       var triangles = triangulate(polygon);
       triangles = triangles.concat(trianglesOutsidePolygon(polygon, mainTriangle));
       renderTriangulation(triangles, "gray");
-      var graph = triangulationToGraph(triangles);
-      var independentSet = getIndependentSet(graph, 8, mainTriangle);
-      setTimeout(function(triangles, independentSet, graph) {
-        canvas.clearCanvas();
-        var newtriangles = removeIndependentSetFromTriangulation(triangles, independentSet);
-        var holes = getHolesInPolygon(graph, independentSet);
-        var holeTriangles = holes.map(triangulate);
-        renderTriangulation(newtriangles, "blue");
-        for(var i=0; i<holeTriangles.length; i++) {
-          renderTriangulation(holeTriangles[i], "gray");
-        }
-        for(var i=0; i<independentSet.length; i++) {
-          drawCircle(independentSet[i], "blue");
-        }
-      }, 500, triangles, independentSet, graph);
+      animateIndependentSetRemoval(triangles, 700);
     }
   } else {
     console.log("self intersecting");
     drawTemporarySegment(p, currentPolygon[currentPolygon.length - 1]);
   }
 }
+
+function animateIndependentSetRemoval(triangles, waitTime) {
+  function continuousRemoval(triangles) {
+    if(triangles.length > 1) {
+      setTimeout(function () {
+        removeNextIndependentSet(triangles, continuousRemoval)
+      }, waitTime);
+    }
+  };
+  continuousRemoval(triangles);
+}
+
+function removeNextIndependentSet(triangles, callback) {
+  var graph = triangulationToGraph(triangles);
+  var independentSet = getIndependentSet(graph, 8, mainTriangle);
+  var newtriangles = removeIndependentSetFromTriangulation(triangles, independentSet);
+  var holes = getHolesInPolygon(graph, independentSet);
+  var holeTriangles = holes.map(triangulate);
+  canvas.clearCanvas();
+  renderTriangulation(newtriangles, "blue");
+  for(var i=0; i<holeTriangles.length; i++) {
+    renderTriangulation(holeTriangles[i], "gray");
+  }
+  for(var i=0; i<independentSet.length; i++) {
+    drawCircle(independentSet[i], "blue");
+  }
+  for(var i=0; i<holeTriangles.length; i++) {
+    newtriangles = newtriangles.concat(holeTriangles[i]);
+  }
+  callback(newtriangles);
+}
+
 
 function snapToPoint(p, polygon) {
   //If (x,y) is close to a point on the polygon, it returns that point
