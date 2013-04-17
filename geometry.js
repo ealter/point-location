@@ -466,3 +466,76 @@ function convexHull(polygon) {
   return hull;
 }
 
+function isUndefined(x) {
+  return typeof x === 'undefined';
+}
+
+//Graph functions
+function triangulationToGraph(triangles) {
+  var graph = {}; //Keys are hashed points
+
+  function addDirectedEdge(p1, p2) {
+    var h1 = p1.hash();
+    var h2 = p2.hash();
+    if(!graph[h1]) {
+      graph[h1] = {
+        p: p1,
+        neighbors: {}
+      };
+    }
+    graph[h1].neighbors[h2] = p2;
+  }
+
+  function addEdge(p1, p2) {
+    addDirectedEdge(p1, p2);
+    addDirectedEdge(p2, p1);
+  }
+
+  for(var i=0; i<triangles.length; i++) {
+    var tri = triangles[i];
+    addEdge(tri[0], tri[1]);
+    addEdge(tri[1], tri[2]);
+    addEdge(tri[2], tri[0]);
+  }
+  //Convert the neighbors object to an array
+  console.log(graph);
+  for(var n in graph) {
+    if(graph.hasOwnProperty(n)) {
+      graph[n].neighbors = $.map(graph[n].neighbors, function (value, key) { return value; });
+    }
+  }
+  return graph;
+}
+
+//Finds an independent set in the graph of vertices with degree <= maxDegree
+//The independent set will not include vertices in ignoreVertices
+function getIndependentSet(graph, maxDegree, ignoreVertices) {
+  var lowDegreeVertices = {};
+  for(var key in graph) {
+    if(graph.hasOwnProperty(key)) {
+      var node = graph[key];
+      if(node.neighbors.length <= maxDegree) {
+        var isIgnored = false;
+        for(var i=0; i<ignoreVertices.length; i++) {
+          if(node.p.equals(ignoreVertices[i])) {
+            isIgnored = true;
+          }
+        }
+        if(!isIgnored) {
+          lowDegreeVertices[node.p.hash()] = node;
+        }
+      }
+    }
+  }
+  for(var key in lowDegreeVertices) {
+    var node = lowDegreeVertices[key];
+    node.neighbors.forEach(function (neighbor) {
+      var hashed = neighbor.hash();
+      if(lowDegreeVertices[hashed]) {
+        delete lowDegreeVertices[hashed];
+      }
+    });
+  };
+  return $.map(lowDegreeVertices, function(value) { return value.p; });
+}
+

@@ -40,9 +40,14 @@ function addPoint(p) {
     render();
     if(isFinishingPolygon) {
       var polygon = allPolygons[allPolygons.length - 2];
-      renderTriangulation(triangulate(polygon), "gray");
-      renderTriangulation(trianglesOutsidePolygon(polygon, mainTriangle), "blue");
-      //trianglesOutsidePolygon(polygon, mainTriangle);
+      var triangles = triangulate(polygon);
+      triangles = triangles.concat(trianglesOutsidePolygon(polygon, mainTriangle));
+      renderTriangulation(triangles, "gray");
+      var graph = triangulationToGraph(triangles);
+      var independentSet = getIndependentSet(graph, 8, mainTriangle);
+      for(var i=0; i<independentSet.length; i++) {
+        drawCircle(independentSet[i].x, independentSet[i].y, "blue");
+      }
     }
   } else {
     console.log("self intersecting");
