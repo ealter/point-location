@@ -432,20 +432,26 @@ function shootRaysFromPointToPolygon(polygon, p) {
   }
 }
 
+//Sort the points radially counter-clockwise
+function radiallySortPoints(polygon, origin) {
+  shootRaysFromPointToPolygon(polygon, origin);
+
+  //Sort the points radially counter-clockwise
+  polygon.sort(function (p1, p2) {
+    return p2.angle - p1.angle;
+  });
+  for(var i=0; i<polygon.length; i++) {
+    delete polygon[i].angle;
+  }
+}
+
 //Finds the convex hull of a polygon using a graham scan
 function convexHull(polygon) {
   var extremeIndex = indexOfMinX(polygon);
   var sortedPoints = polygon.slice(0);
   sortedPoints.splice(extremeIndex, 1);
-  shootRaysFromPointToPolygon(sortedPoints, polygon[extremeIndex]);
+  radiallySortPoints(sortedPoints, polygon[extremeIndex]);
 
-  //Sort the points radially counter-clockwise
-  sortedPoints.sort(function (p1, p2) {
-    return p2.angle - p1.angle;
-  });
-  for(var i=0; i<sortedPoints.length; i++) {
-    delete sortedPoints[i].angle;
-  }
   var hull = [polygon[extremeIndex]];
   var i = 0;
   while(i < sortedPoints.length) {
@@ -537,5 +543,37 @@ function getIndependentSet(graph, maxDegree, ignoreVertices) {
     });
   };
   return $.map(lowDegreeVertices, function(value) { return value.p; });
+}
+
+//Removes all triangles with vertices inside the independent set.
+//This would be possible in O(n), if I had kept references to the triangles in
+//the graph data structure. For simplicity, I'm doing this in O(n^2)
+function removeIndependentSetFromTriangulation(triangles, independentSet) {
+  var newTriangles = [];
+  for(var i=0; i<triangles.length; i++) {
+    var isMatch = false;
+    for(var j=0; !isMatch && j<independentSet.length; j++) {
+      for(var k=0; k<3; k++) {
+        if(triangles[i][k].equals(independentSet[j])) {
+          isMatch = true;
+        }
+      }
+    }
+    if(!isMatch) {
+      newTriangles.push(triangles[i]);
+    }
+  }
+  console.assert(independentSet.length === 0 || newTriangles.length < triangles.length);
+  return newTriangles;
+}
+
+function getHolesInPolygon(graph, independentSet) {
+  var holes = [];
+  for(var i=0; i<independentSet.length; i++) {
+    var neighbors = graph[independentSet[i].hash()].neighbors.slice(0);
+    radiallySortPoints(neighbors, independentSet[i]);
+    holes.push(neighbors);
+  }
+  return holes;
 }
 

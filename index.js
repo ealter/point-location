@@ -45,9 +45,19 @@ function addPoint(p) {
       renderTriangulation(triangles, "gray");
       var graph = triangulationToGraph(triangles);
       var independentSet = getIndependentSet(graph, 8, mainTriangle);
-      for(var i=0; i<independentSet.length; i++) {
-        drawCircle(independentSet[i], "blue");
-      }
+      setTimeout(function(triangles, independentSet, graph) {
+        canvas.clearCanvas();
+        var newtriangles = removeIndependentSetFromTriangulation(triangles, independentSet);
+        var holes = getHolesInPolygon(graph, independentSet);
+        var holeTriangles = holes.map(triangulate);
+        renderTriangulation(newtriangles, "blue");
+        for(var i=0; i<holeTriangles.length; i++) {
+          renderTriangulation(holeTriangles[i], "gray");
+        }
+        for(var i=0; i<independentSet.length; i++) {
+          drawCircle(independentSet[i], "blue");
+        }
+      }, 500, triangles, independentSet, graph);
     }
   } else {
     console.log("self intersecting");
