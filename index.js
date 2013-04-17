@@ -46,7 +46,7 @@ function addPoint(p) {
       var graph = triangulationToGraph(triangles);
       var independentSet = getIndependentSet(graph, 8, mainTriangle);
       for(var i=0; i<independentSet.length; i++) {
-        drawCircle(independentSet[i].x, independentSet[i].y, "blue");
+        drawCircle(independentSet[i], "blue");
       }
     }
   } else {
@@ -110,7 +110,7 @@ function render() {
         var color = "black";
         if(polygon === currentPolygon && i == polygon.length - 1)
           color = "blue";
-        drawCircle(polygon[i].x, polygon[i].y, color);
+        drawCircle(polygon[i], color);
       }
       //Draw the lines connecting them
       renderLine(polygon, {
@@ -128,12 +128,12 @@ function render() {
   });
 }
 
-function drawCircle(x, y, color) {
+function drawCircle(p, color) {
   canvas.drawArc({
     fillStyle: color,
     strokeStyle: "black",
-    x: x,
-    y: y,
+    x: p.x,
+    y: p.y,
     radius: 5
   });
 }
