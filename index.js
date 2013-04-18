@@ -157,7 +157,6 @@ function removeNextIndependentSet(triangles, callback) {
   });
 }
 
-
 function snapToPoint(p, polygon) {
   //If (x,y) is close to a point on the polygon, it returns that point
   for(var i=0; i<polygon.length; i++) {
@@ -180,9 +179,18 @@ function segmentIntersectsAnyPolygon(seg) {
 }
 
 function canAppendPointToPolygon(polygon, p) {
+  function intersectsVertex() {
+    for(var i=1; i<polygon.length; i++) {
+      if(polygon[i].equals(p))
+        return true;
+    }
+    return false;
+  }
+
   return polygon.length == 0 ||
     (!p.equals(polygon[polygon.length - 1]) && //Can't make an edge from a point to the same point
      (polygon.length <= 1 || !p.equals(polygon[polygon.length - 2])) && //No edge that already exists
+     !intersectsVertex() &&
      !segmentIntersectsAnyPolygon(new LineSegment(polygon[polygon.length - 1], p)));
 }
 
