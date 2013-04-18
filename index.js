@@ -1,7 +1,8 @@
 var currentPolygon = []; //An array of points
-var allPolygons = [currentPolygon];    //An array of point arrays. Includes currentPolygon
+var allPolygons = [currentPolygon]; //An array of point arrays. Includes currentPolygon
 
 var canvas = $("#canvas");
+var nextButton = $("#nextButton");
 var canvasPosition = {
     x: canvas.offset().left,
     y: canvas.offset().top
@@ -13,6 +14,7 @@ var mainTriangle = [new Point(0, canvas.height() - 2),
 
 $(function() {
   render();
+  nextButton.attr('disabled', 'disabled');
 });
 
 canvas.on("click", function(e) {
@@ -24,6 +26,20 @@ canvas.on("click", function(e) {
   }
 });
 
+function setNextStep(text, callback) {
+  if(callback) {
+    nextButton.removeAttr('disabled');
+    nextButton.val(text);
+    nextButton.on('click', function() {
+      nextButton.off('click');
+      nextButton.attr('disabled', 'disabled');
+      callback();
+    });
+  } else {
+    nextButton.attr('disabled', 'disabled');
+  }
+}
+
 function addPoint(p) {
   p = snapToPoint(p, currentPolygon);
   console.log(p);
@@ -32,6 +48,7 @@ function addPoint(p) {
     var isFinishingPolygon = currentPolygon.length >= 3 && p.equals(currentPolygon[0]);
     if(isFinishingPolygon) {
       console.log("Finishing polygon");
+      canvas.off('click'); //Disable clicks so that we don't get new points
       currentPolygon.forEach(function(p) {console.log("[" + p.x + "," + p.y + "],")})
       currentPolygon.pop();
       currentPolygon = [];
@@ -40,10 +57,16 @@ function addPoint(p) {
     render();
     if(isFinishingPolygon) {
       var polygon = allPolygons[allPolygons.length - 2];
-      var triangles = triangulate(polygon);
-      triangles = triangles.concat(trianglesOutsidePolygon(polygon, mainTriangle));
-      renderTriangulation(triangles, "gray");
-      animateIndependentSetRemoval(triangles, 700);
+      setNextStep("Triangulate polygon", function() {
+        var triangles = triangulate(polygon);
+        render();
+        renderTriangulation(triangles, "gray");
+        setNextStep("Triangulate outside of polygon", function() {
+          triangles = triangles.concat(trianglesOutsidePolygon(polygon, mainTriangle));
+          renderTriangulation(triangles, "gray");
+          animateIndependentSetRemoval(triangles, 700);
+        });
+      });
     }
   } else {
     console.log("self intersecting");
