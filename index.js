@@ -17,12 +17,29 @@ $(function() {
   nextButton.attr('disabled', 'disabled');
 });
 
+var logMessage = null;
+(function() {
+  var log = $("#messageLog");
+  var count = 0;
+  logMessage = function(message, isError) {
+    count++;
+    var paragraph = $(document.createElement('p'));
+    paragraph.text(count + ". " + message)
+             .addClass("logMessage");
+    if(isError) {
+      paragraph.addClass("errorMessage");
+    }
+    log.append(paragraph);
+  };
+})();
+
+
 canvas.on("click", function(e) {
   var mouse = new Point(e.pageX - canvasPosition.x, e.pageY - canvasPosition.y);
   if(pointIsInsideTriangle(mouse, mainTriangle)) {
     addPoint(mouse);
   } else {
-    console.log("Point is outside the main triangle"); //TODO: user facing error message
+    logMessage("Point is outside the main triangle", true);
   }
 });
 
@@ -42,12 +59,11 @@ function setNextStep(text, callback) {
 
 function addPoint(p) {
   p = snapToPoint(p, currentPolygon);
-  console.log(p);
   if(canAppendPointToPolygon(currentPolygon, p)) {
     currentPolygon.push(p);
     var isFinishingPolygon = currentPolygon.length >= 3 && p.equals(currentPolygon[0]);
     if(isFinishingPolygon) {
-      console.log("Finishing polygon");
+      logMessage("Finishing polygon");
       canvas.off('click'); //Disable clicks so that we don't get new points
       currentPolygon.forEach(function(p) {console.log("[" + p.x + "," + p.y + "],")})
       currentPolygon.pop();
@@ -69,7 +85,7 @@ function addPoint(p) {
       });
     }
   } else {
-    console.log("self intersecting");
+    logMessage("Self intersecting segment. Ignoring.", true);
     drawTemporarySegment(p, currentPolygon[currentPolygon.length - 1]);
   }
 }
@@ -103,7 +119,6 @@ function renderGraphWithoutPoints(graph, badpoints, color) {
 
   $.each(graph, function (key, node) {
     if(isBadPoint(node.p)) {
-      console.log(node.p, "is bad point");
       return;
     }
     for(var i=0; i<node.neighbors.length; i++) {

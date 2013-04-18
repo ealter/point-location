@@ -2,3 +2,16 @@
   border: 1px solid black;
 }
 
+#messageLog {
+  float: right;
+  height: 100%;
+  border: 1px solid black;
+  padding-right: 10px;
+  padding-left: 10px;
+  overflow-y: scroll;
+}
+
+.errorMessage {
+  color: red;
+}
+
