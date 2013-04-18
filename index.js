@@ -64,7 +64,7 @@ function addPoint(p) {
         setNextStep("Triangulate outside of polygon", function() {
           triangles = triangles.concat(trianglesOutsidePolygon(polygon, mainTriangle));
           renderTriangulation(triangles, "gray");
-          animateIndependentSetRemoval(triangles, 700);
+          animateIndependentSetRemoval(triangles, 700, true);
         });
       });
     }
@@ -74,15 +74,49 @@ function addPoint(p) {
   }
 }
 
-function animateIndependentSetRemoval(triangles, waitTime) {
+function animateIndependentSetRemoval(triangles, waitTime, interactive) {
   function continuousRemoval(triangles) {
     if(triangles.length > 1) {
-      setTimeout(function () {
-        removeNextIndependentSet(triangles, continuousRemoval)
-      }, waitTime);
+      if(interactive) {
+        setNextStep("Find independent set", function() {
+          removeNextIndependentSet(triangles, continuousRemoval);
+        });
+      } else {
+        setTimeout(function () {
+          removeNextIndependentSet(triangles, continuousRemoval)
+        }, waitTime);
+      }
     }
   };
   continuousRemoval(triangles);
+}
+
+function renderGraphWithoutPoints(graph, badpoints, color) {
+  var badPointsSet = {};
+  for(var i=0; i<badpoints.length; i++) {
+    badPointsSet[badpoints[i].hash()] = true;
+  }
+
+  function isBadPoint(p) {
+    return badPointsSet[p.hash()] === true;
+  }
+
+  $.each(graph, function (key, node) {
+    if(isBadPoint(node.p)) {
+      console.log(node.p, "is bad point");
+      return;
+    }
+    for(var i=0; i<node.neighbors.length; i++) {
+      var p = node.neighbors[i];
+      if(!isBadPoint(p)) {
+        renderLine([p, node.p], {
+          strokeStyle: color
+        });
+      }
+    }
+    drawCircle(node.p, "black");
+  });
+  renderOuterTriangle();
 }
 
 function removeNextIndependentSet(triangles, callback) {
@@ -91,23 +125,21 @@ function removeNextIndependentSet(triangles, callback) {
   for(var i=0; i<independentSet.length; i++) {
     drawCircle(independentSet[i], "brown");
   }
-  setTimeout(function(triangles, independentSet, graph) {
+  setNextStep("Remove the independent set", function() {
     var newtriangles = removeIndependentSetFromTriangulation(triangles, independentSet);
-    var holes = getHolesInPolygon(graph, independentSet);
-    var holeTriangles = holes.map(triangulate);
     canvas.clearCanvas();
-    renderTriangulation(newtriangles, "blue");
-    for(var i=0; i<holeTriangles.length; i++) {
-      renderTriangulation(holeTriangles[i], "gray");
-    }
-    for(var i=0; i<independentSet.length; i++) {
-      drawCircle(independentSet[i], "blue");
-    }
-    for(var i=0; i<holeTriangles.length; i++) {
-      newtriangles = newtriangles.concat(holeTriangles[i]);
-    }
-    callback(newtriangles);
-  }, 700, triangles, independentSet, graph);
+    renderOuterTriangle();
+    renderGraphWithoutPoints(graph, independentSet, "blue"); //TODO
+    setNextStep("Retriangulate the holes", function() {
+      var holes = getHolesInPolygon(graph, independentSet);
+      var holeTriangles = holes.map(triangulate);
+      for(var i=0; i<holeTriangles.length; i++) {
+        renderTriangulation(holeTriangles[i], "gray");
+        newtriangles = newtriangles.concat(holeTriangles[i]);
+      }
+      callback(newtriangles);
+    });
+  });
 }
 
 
