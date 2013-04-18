@@ -486,7 +486,8 @@ function triangulationToGraph(triangles) {
     if(!graph[h1]) {
       graph[h1] = {
         p: p1,
-        neighbors: {}
+        neighbors: {},
+        triangles: []
       };
     }
     graph[h1].neighbors[h2] = p2;
@@ -497,11 +498,18 @@ function triangulationToGraph(triangles) {
     addDirectedEdge(p2, p1);
   }
 
+  function addTriangle(p, triangle) {
+    graph[p.hash()].triangles.push(triangle);
+  }
+
   for(var i=0; i<triangles.length; i++) {
     var tri = triangles[i];
     addEdge(tri[0], tri[1]);
     addEdge(tri[1], tri[2]);
     addEdge(tri[2], tri[0]);
+    addTriangle(tri[0], triangles[i]);
+    addTriangle(tri[1], triangles[i]);
+    addTriangle(tri[2], triangles[i]);
   }
   //Convert the neighbors object to an array
   console.log(graph);
@@ -567,12 +575,52 @@ function removeIndependentSetFromTriangulation(triangles, independentSet) {
   return newTriangles;
 }
 
+//Top level (t=0) is the outer triangle
+//For each triangle on L(t), mark which triangles on L(t+1) overlap it.
+//Given L(t+1), to find L(t), find the holes and then triangulate them
+function getNextTriangulationLevel(graph, independentSet) {
+  var triangles = [];
+  graph.forEach(function (node) {
+    node.mark = false;
+  });
+
+  independentSet.forEach(function (p) {
+    graph[p.hash()].mark = true;
+    var hole = getHoleInPolygon(graph, p);
+    var holeTriangles = triangulate(hole);
+    holeTriangles.forEach(function (tri) {
+      //The triangle might not overlap all of these, but it will overlap at most
+      //8, so in terms of Big O, O(1) == O(8)
+      tri.overlaps = graph[p.hash()].triangles.slice(0);
+    });
+    triangles = triangles.concat(holeTriangles);
+  });
+
+  graph.forEach(function (node) {
+    if(!node.mark) {
+      var nodeTriangles = node.triangles;
+      nodeTriangles.forEach(function (tri) {
+        var nextTriangle = tri.slice(0);
+        nextTriangle.overlaps = [tri];
+        triangles.push(nextTriangle);
+      });
+    }
+    delete node.mark;
+  });
+
+  return triangles;
+}
+
+function getOneHoleInPolygon(graph, removedPoint) {
+  var neighbors = graph[removedPoint.hash()].neighbors.slice(0);
+  radiallySortPoints(neighbors, removedPoint);
+  return neighbors;
+}
+
 function getHolesInPolygon(graph, independentSet) {
   var holes = [];
   for(var i=0; i<independentSet.length; i++) {
-    var neighbors = graph[independentSet[i].hash()].neighbors.slice(0);
-    radiallySortPoints(neighbors, independentSet[i]);
-    holes.push(neighbors);
+    holes.push(getOneHoleInPolygon(graph, independentSet[i]));
   }
   return holes;
 }

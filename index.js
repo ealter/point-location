@@ -65,21 +65,26 @@ function animateIndependentSetRemoval(triangles, waitTime) {
 function removeNextIndependentSet(triangles, callback) {
   var graph = triangulationToGraph(triangles);
   var independentSet = getIndependentSet(graph, 8, mainTriangle);
-  var newtriangles = removeIndependentSetFromTriangulation(triangles, independentSet);
-  var holes = getHolesInPolygon(graph, independentSet);
-  var holeTriangles = holes.map(triangulate);
-  canvas.clearCanvas();
-  renderTriangulation(newtriangles, "blue");
-  for(var i=0; i<holeTriangles.length; i++) {
-    renderTriangulation(holeTriangles[i], "gray");
-  }
   for(var i=0; i<independentSet.length; i++) {
-    drawCircle(independentSet[i], "blue");
+    drawCircle(independentSet[i], "brown");
   }
-  for(var i=0; i<holeTriangles.length; i++) {
-    newtriangles = newtriangles.concat(holeTriangles[i]);
-  }
-  callback(newtriangles);
+  setTimeout(function(triangles, independentSet, graph) {
+    var newtriangles = removeIndependentSetFromTriangulation(triangles, independentSet);
+    var holes = getHolesInPolygon(graph, independentSet);
+    var holeTriangles = holes.map(triangulate);
+    canvas.clearCanvas();
+    renderTriangulation(newtriangles, "blue");
+    for(var i=0; i<holeTriangles.length; i++) {
+      renderTriangulation(holeTriangles[i], "gray");
+    }
+    for(var i=0; i<independentSet.length; i++) {
+      drawCircle(independentSet[i], "blue");
+    }
+    for(var i=0; i<holeTriangles.length; i++) {
+      newtriangles = newtriangles.concat(holeTriangles[i]);
+    }
+    callback(newtriangles);
+  }, 700, triangles, independentSet, graph);
 }
 
 
@@ -149,6 +154,10 @@ function render() {
 
   canvas.clearCanvas();
   renderPolygons();
+  renderOuterTriangle();
+}
+
+function renderOuterTriangle() {
   renderLine(mainTriangle, {
     closed: true,
     strokeStyle: "brown",
@@ -165,3 +174,4 @@ function drawCircle(p, color) {
     radius: 5
   });
 }
+
