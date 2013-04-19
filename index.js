@@ -12,11 +12,33 @@ var mainTriangle = [new Point(0, canvas.height() - 2),
                     new Point(canvas.width() - 1, canvas.height() - 2),
                     new Point(canvas.width()/2, 0)];
 
+function resetDataStructure() {
+  nextButton = $("#nextStepDataStructure");
+  $("#nextStepPointLocation").val("Build the data structure first")
+                             .attr('disabled', 'disabled');
+  $("#choosePoint").val("Build the data structure first")
+                   .attr('disabled', 'disabled');
+  $("#resetDataStructure").removeAttr('disabled')
+                          .val("Rebuild data structure");
+
+  render();
+  var polygon = allPolygons[allPolygons.length - 2];
+  setNextStep("Triangulate polygon", function() {
+    var triangles = triangulate(polygon);
+    render();
+    renderTriangulation(triangles, "gray");
+    setNextStep("Triangulate outside of polygon", function() {
+      triangles = triangles.concat(trianglesOutsidePolygon(polygon, mainTriangle));
+      renderTriangulation(triangles, "gray");
+      interactiveIndependentSetRemoval(triangles);
+    });
+  });
+}
+
 $(function() {
   render();
-  nextButton.attr('disabled', 'disabled');
-  $("#nextStepPointLocation").attr('disabled', 'disabled');
-  $("#choosePoint").attr('disabled', 'disabled');
+
+  $("#resetDataStructure").on('click', resetDataStructure);
 });
 
 var logMessage = null;
@@ -84,21 +106,9 @@ function addPoint(p) {
       currentPolygon.pop();
       currentPolygon = [];
       allPolygons.push(currentPolygon);
+      resetDataStructure();
     }
     render();
-    if(isFinishingPolygon) {
-      var polygon = allPolygons[allPolygons.length - 2];
-      setNextStep("Triangulate polygon", function() {
-        var triangles = triangulate(polygon);
-        render();
-        renderTriangulation(triangles, "gray");
-        setNextStep("Triangulate outside of polygon", function() {
-          triangles = triangles.concat(trianglesOutsidePolygon(polygon, mainTriangle));
-          renderTriangulation(triangles, "gray");
-          interactiveIndependentSetRemoval(triangles);
-        });
-      });
-    }
   } else {
     logMessage("Self intersecting segment. Ignoring.", true);
     drawTemporarySegment(p, currentPolygon[currentPolygon.length - 1]);
