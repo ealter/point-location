@@ -179,7 +179,9 @@ function interactivelyLocatePoint(pointLocationData, query) {
       }
     }
 
-    if(level <= 1) {
+    if(nextOverlaps === null) {
+      logMessage("The point was not found");
+    } else if(level <= 1) {
       setNextStep("Last step: Find the point", lastStep);
     } else {
       setNextStep("Next level", function() {
