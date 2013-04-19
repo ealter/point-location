@@ -60,6 +60,11 @@ function setNextStep(text, callback) {
       nextButton.attr('disabled', 'disabled');
       callback();
     });
+    if($("#shouldAnimate").is(':checked')) {
+      setTimeout(function() {
+        nextButton.click();
+      }, 350);
+    }
   } else {
     nextButton.attr('disabled', 'disabled');
   }
