@@ -125,15 +125,52 @@ function waitForPointLocationChoice(pointLocationData) {
 }
 
 function interactivelyLocatePoint(pointLocationData, query) {
-  function nextLevel(level) {
-    if(level == 0) {
-      //TODO: we've found the point
+  function renderCurrentTriangulation(allTriangles, emphasizedTriangles) {
+    canvas.clearCanvas();
+    renderTriangulation(allTriangles, "gray");
+    renderTriangulation(emphasizedTriangles, "blue");
+    renderOuterTriangle();
+    drawCircle(query, "green");
+  }
+
+  function lastStep() {
+    var correctTriangle = null;
+    var triangles = pointLocationData[0];
+    for(var i=0; i<triangles.length; i++) {
+      if(pointIsInsideTriangle(query, triangles[i])) {
+        correctTriangle = triangles[i];
+        break;
+      }
+    }
+    console.assert(correctTriangle);
+    renderCurrentTriangulation(pointLocationData[0], [correctTriangle]);
+
+    waitForPointLocationChoice(pointLocationData);
+  }
+
+  function nextLevel(level, overlappingTriangles) {
+    console.assert(level < pointLocationData.length);
+    var triangles = pointLocationData[level];
+
+    renderCurrentTriangulation(triangles, overlappingTriangles);
+
+    var nextOverlaps = null;
+    for(var i=0; i<triangles.length; i++) {
+      if(pointIsInsideTriangle(query, triangles[i])) {
+        nextOverlaps = triangles[i].overlaps;
+        break;
+      }
+    }
+
+    if(level <= 1) {
+      setNextStep("Last step: Find the point", lastStep);
     } else {
-      //TODO
-      nextLevel(level - 1);
+      setNextStep("Next level", function() {
+        nextLevel(level - 1, nextOverlaps);
+      });
     }
   }
-  nextLevel(pointLocationData.length - 1);
+  nextLevel(pointLocationData.length - 1, []);
 }
 
 function renderGraphWithoutPoints(graph, badpoints, color) {
