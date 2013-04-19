@@ -2,7 +2,7 @@ var currentPolygon = []; //An array of points
 var allPolygons = [currentPolygon]; //An array of point arrays. Includes currentPolygon
 
 var canvas = $("#canvas");
-var nextButton = $("#nextButton");
+var nextButton = $("#nextStepDataStructure");
 var canvasPosition = {
     x: canvas.offset().left,
     y: canvas.offset().top
@@ -15,6 +15,8 @@ var mainTriangle = [new Point(0, canvas.height() - 2),
 $(function() {
   render();
   nextButton.attr('disabled', 'disabled');
+  $("#nextStepPointLocation").attr('disabled', 'disabled');
+  $("#choosePoint").attr('disabled', 'disabled');
 });
 
 var logMessage = null;
@@ -114,10 +116,27 @@ function interactiveIndependentSetRemoval(triangles) {
 }
 
 function waitForPointLocationChoice(pointLocationData) {
+  $("#nextStepDataStructure").val("Done building the data structure")
+                             .attr('disabled', 'disabled');
+  nextButton = $("#nextStepPointLocation");
+  nextButton.attr('disabled', 'disabled');
+
+  var choosePointButton = $("#choosePoint");
+  choosePointButton.off('click');
+  choosePointButton.on('click', function() {
+    waitForPointLocationChoice(pointLocationData);
+  });
+  choosePointButton.attr('disabled', 'disabled');
+
   nextButton.val("Choose a point to locate");
+  choosePointButton.val("Choose a point to locate");
+  render();
   setCanvasOnClick(function (mouse) {
     canvas.off('click');
     drawCircle(mouse, "green");
+    choosePointButton.val("Reset point location");
+    choosePointButton.removeAttr('disabled');
+    nextButton.removeAttr('disabled');
     setNextStep("Locate the point", function() {
       interactivelyLocatePoint(pointLocationData, mouse);
     });
@@ -144,8 +163,6 @@ function interactivelyLocatePoint(pointLocationData, query) {
     }
     console.assert(correctTriangle);
     renderCurrentTriangulation(pointLocationData[0], [correctTriangle]);
-
-    waitForPointLocationChoice(pointLocationData);
   }
 
   function nextLevel(level, overlappingTriangles) {

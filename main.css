@@ -15,3 +15,14 @@
   color: red;
 }
 
+#buildingDataStructure {
+  float: left;
+  padding-right: 7px;
+  border-right: 1px solid black;
+}
+
+#pointLocation {
+  float: left;
+  padding-left: 7px;
+}
+
