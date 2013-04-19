@@ -33,9 +33,15 @@ var logMessage = null;
   };
 })();
 
+function setCanvasOnClick(callback) {
+  canvas.off('click');
+  canvas.on('click', function(e) {
+    var mouse = new Point(e.pageX - canvasPosition.x, e.pageY - canvasPosition.y);
+    callback(mouse);
+  });
+}
 
-canvas.on("click", function(e) {
-  var mouse = new Point(e.pageX - canvasPosition.x, e.pageY - canvasPosition.y);
+setCanvasOnClick(function(mouse) {
   if(pointIsInsideTriangle(mouse, mainTriangle)) {
     addPoint(mouse);
   } else {
@@ -80,7 +86,7 @@ function addPoint(p) {
         setNextStep("Triangulate outside of polygon", function() {
           triangles = triangles.concat(trianglesOutsidePolygon(polygon, mainTriangle));
           renderTriangulation(triangles, "gray");
-          animateIndependentSetRemoval(triangles, 700, true);
+          interactiveIndependentSetRemoval(triangles);
         });
       });
     }
@@ -90,21 +96,44 @@ function addPoint(p) {
   }
 }
 
-function animateIndependentSetRemoval(triangles, waitTime, interactive) {
+function interactiveIndependentSetRemoval(triangles) {
+  var pointLocationData = [triangles.slice(0)];
   function continuousRemoval(triangles) {
     if(triangles.length > 1) {
-      if(interactive) {
-        setNextStep("Find independent set", function() {
-          removeNextIndependentSet(triangles, continuousRemoval);
-        });
-      } else {
-        setTimeout(function () {
-          removeNextIndependentSet(triangles, continuousRemoval)
-        }, waitTime);
-      }
+      setNextStep("Find independent set", function() {
+        var independentSet = removeNextIndependentSet(triangles, continuousRemoval);
+        var graph = triangulationToGraph(triangles);
+        pointLocationData.push(getNextTriangulationLevel(graph, independentSet));
+      });
+    } else {
+      console.log(pointLocationData);
+      waitForPointLocationChoice(pointLocationData);
     }
-  };
+  }
   continuousRemoval(triangles);
+}
+
+function waitForPointLocationChoice(pointLocationData) {
+  nextButton.val("Choose a point to locate");
+  setCanvasOnClick(function (mouse) {
+    canvas.off('click');
+    drawCircle(mouse, "green");
+    setNextStep("Locate the point", function() {
+      interactivelyLocatePoint(pointLocationData, mouse);
+    });
+  });
+}
+
+function interactivelyLocatePoint(pointLocationData, query) {
+  function nextLevel(level) {
+    if(level == 0) {
+      //TODO: we've found the point
+    } else {
+      //TODO
+      nextLevel(level - 1);
+    }
+  }
+  nextLevel(pointLocationData.length - 1);
 }
 
 function renderGraphWithoutPoints(graph, badpoints, color) {
@@ -155,6 +184,7 @@ function removeNextIndependentSet(triangles, callback) {
       callback(newtriangles);
     });
   });
+  return independentSet;
 }
 
 function snapToPoint(p, polygon) {

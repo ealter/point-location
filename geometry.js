@@ -580,13 +580,33 @@ function removeIndependentSetFromTriangulation(triangles, independentSet) {
 //Given L(t+1), to find L(t), find the holes and then triangulate them
 function getNextTriangulationLevel(graph, independentSet) {
   var triangles = [];
-  graph.forEach(function (node) {
+  $.each(graph, function(key, node) {
     node.mark = false;
   });
 
+  function shouldAddTriangle(tri) {
+    //Check if any of the points are in the independent set
+    for(var i=0; i<independentSet.length; i++) {
+      if(independentSet[i].equals(tri[0]) ||
+         independentSet[i].equals(tri[1]) ||
+         independentSet[i].equals(tri[2])) {
+        return false;
+      }
+    }
+    //Check if we've already seen this triangle
+    for(var i=0; i<triangles.length; i++) {
+      if(tri[0].equals(triangles[i][0]) &&
+         tri[1].equals(triangles[i][1]) &&
+         tri[2].equals(triangles[i][2])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   independentSet.forEach(function (p) {
     graph[p.hash()].mark = true;
-    var hole = getHoleInPolygon(graph, p);
+    var hole = getOneHoleInPolygon(graph, p);
     var holeTriangles = triangulate(hole);
     holeTriangles.forEach(function (tri) {
       //The triangle might not overlap all of these, but it will overlap at most
@@ -596,13 +616,15 @@ function getNextTriangulationLevel(graph, independentSet) {
     triangles = triangles.concat(holeTriangles);
   });
 
-  graph.forEach(function (node) {
+  $.each(graph, function(key, node) {
     if(!node.mark) {
       var nodeTriangles = node.triangles;
       nodeTriangles.forEach(function (tri) {
-        var nextTriangle = tri.slice(0);
-        nextTriangle.overlaps = [tri];
-        triangles.push(nextTriangle);
+        if(shouldAddTriangle(tri)) {
+          var nextTriangle = tri.slice(0);
+          nextTriangle.overlaps = [tri];
+          triangles.push(nextTriangle);
+        }
       });
     }
     delete node.mark;
