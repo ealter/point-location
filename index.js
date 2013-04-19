@@ -62,7 +62,9 @@ function setNextStep(text, callback) {
     });
     if($("#shouldAnimate").is(':checked')) {
       setTimeout(function() {
-        nextButton.click();
+        if(nextButton.attr('disabled') != 'disabled') {
+          nextButton.click();
+        }
       }, 350);
     }
   } else {
