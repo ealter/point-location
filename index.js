@@ -1,5 +1,8 @@
-var currentPolygon = []; //An array of points
-var allPolygons = [currentPolygon]; //An array of point arrays. Includes currentPolygon
+var fullPolygon = []; //A circular array of points
+var polygonParts = [fullPolygon]; //Disjoint subsets of fullPolygon whose union is equal to fullPolygon
+var fullPolygonIsComplete = false;
+var currentPolygonSplitter = [];
+//Invariant: if fullPolygonIsComplete == false, then polygonParts.length == 1
 
 var canvas = $("#canvas");
 var nextButton = $("#nextStepDataStructure");
@@ -22,18 +25,59 @@ function resetDataStructure() {
                           .val("Rebuild data structure");
 
   render();
-  var polygon = allPolygons[allPolygons.length - 2];
   setNextStep("Triangulate polygon", function() {
-    var triangles = triangulate(polygon);
+    var triangles = triangulate(fullPolygon);
     render();
     renderTriangulation(triangles, "gray");
     setNextStep("Triangulate outside of polygon", function() {
-      triangles = triangles.concat(trianglesOutsidePolygon(polygon, mainTriangle));
+      triangles = triangles.concat(trianglesOutsidePolygon(fullPolygon, mainTriangle));
       renderTriangulation(triangles, "gray");
       interactiveIndependentSetRemoval(triangles);
     });
   });
 }
+
+function startSplittingPolygon() {
+  setCanvasOnClick(function (mouse) {
+    var p = snapToPoint(mouse);
+    var splitter = currentPolygonSplitter;
+    //If there is no splitter, then the point must hit the polygon
+    //TODO: work here
+
+    var hitsAVertex = polygonParts.some(function (part) {
+      return pointIsOnPolygon(p, part);
+    });
+
+    if(pointIsOnPolygon(p, splitter)) {
+      logMessage("Polygon split cannot self-intersect", true);
+    } else if(splitter.length == 0 && !hitsAVertex) {
+      logMessage("Polygon split must start on a vertex", true);
+    } else if(!hitsAVertex && !pointIsInsidePolygon(mouse, fullPolygon)) {
+      logMessage("Polygon splits must remain within the main polygon", true);
+    } else if(splitter.length === 0 || !segmentIntersectsAnyPolygon(new LineSegment(splitter[splitter.length - 1], p))) {
+      splitter.push(p);
+      var isFinishingSplit = hitsAVertex && splitter.length > 1;
+      renderLine(splitter, {
+        strokeStyle: "black"
+      });
+      if(!isFinishingSplit && splitter.length > 1) {
+        drawCircle(p, "yellow");
+      }
+      if(isFinishingSplit) {
+        logMessage("Adding a split to the polygon");
+        addPolygonSplit(splitter);
+        currentPolygonSplitter = [];
+      }
+    } else {
+      logMessage("Self intersecting segment. Ignoring.", true);
+    }
+  });
+  setNextStep("Done splitting polygon", function() {
+    canvas.off('click');
+    resetDataStructure();
+  });
+}
+
 
 $(function() {
   render();
@@ -95,23 +139,22 @@ function setNextStep(text, callback) {
 }
 
 function addPoint(p) {
-  p = snapToPoint(p, currentPolygon);
-  if(canAppendPointToPolygon(currentPolygon, p)) {
-    currentPolygon.push(p);
-    var isFinishingPolygon = currentPolygon.length >= 3 && p.equals(currentPolygon[0]);
+  p = snapToPoint(p);
+  if(canAppendPointToPolygon(fullPolygon, p)) {
+    fullPolygon.push(p);
+    var isFinishingPolygon = fullPolygon.length >= 3 && p.equals(fullPolygon[0]);
     if(isFinishingPolygon) {
       logMessage("Finishing polygon");
+      fullPolygonIsComplete = true;
       canvas.off('click'); //Disable clicks so that we don't get new points
-      currentPolygon.forEach(function(p) {console.log("[" + p.x + "," + p.y + "],")})
-      currentPolygon.pop();
-      currentPolygon = [];
-      allPolygons.push(currentPolygon);
-      resetDataStructure();
+      fullPolygon.forEach(function(p) {console.log("[" + p.x + "," + p.y + "],")})
+      fullPolygon.pop();
+      startSplittingPolygon();
+      //resetDataStructure();
     }
     render();
   } else {
     logMessage("Self intersecting segment. Ignoring.", true);
-    drawTemporarySegment(p, currentPolygon[currentPolygon.length - 1]);
   }
 }
 
@@ -125,7 +168,6 @@ function interactiveIndependentSetRemoval(triangles) {
         pointLocationData.push(getNextTriangulationLevel(graph, independentSet));
       });
     } else {
-      console.log(pointLocationData);
       waitForPointLocationChoice(pointLocationData);
     }
   }
@@ -180,6 +222,7 @@ function interactivelyLocatePoint(pointLocationData, query) {
     }
     console.assert(correctTriangle);
     renderCurrentTriangulation(pointLocationData[0], [correctTriangle]);
+    renderPolygons();
   }
 
   function nextLevel(level, overlappingTriangles) {
@@ -260,12 +303,15 @@ function removeNextIndependentSet(triangles, callback) {
   return independentSet;
 }
 
-function snapToPoint(p, polygon) {
+function snapToPoint(p) {
   //If (x,y) is close to a point on the polygon, it returns that point
-  for(var i=0; i<polygon.length; i++) {
-    if(distanceSquared(p, polygon[i]) < 300) {
-      console.log("snapping");
-      return polygon[i].copy();
+  for(var i=0; i<polygonParts.length; i++) {
+    var polygon = polygonParts[i];
+    for(var j=0; j<polygon.length; j++) {
+      if(distanceSquared(p, polygon[j]) < 300) {
+        console.log("snapping");
+        return polygon[j].copy();
+      }
     }
   }
   return p.copy();
@@ -276,7 +322,7 @@ function drawTemporarySegment(p1, p2) {
 }
 
 function segmentIntersectsAnyPolygon(seg) {
-  return allPolygons.some(function(polygon) {
+  return polygonParts.some(function(polygon) {
     return segmentIntersectsPolygon(polygon, seg);
   });
 }
@@ -306,6 +352,11 @@ function renderTriangulation(triangles, color) {
   });
 }
 
+function addPolygonSplit(split) {
+  logMessage("Adding the split now. TODO");
+  console.log(split);
+}
+
 function renderLine(points, options) {
   options.strokeStyle = options.strokeStyle || "black";
   if(typeof options.strokeWidth === 'undefined')
@@ -317,24 +368,36 @@ function renderLine(points, options) {
   canvas.drawLine(options);
 }
 
+function renderPolygons() {
+  polygonParts.forEach(function (polygon) {
+    for(var i=0; i<polygon.length; i++) {
+      var color = "black";
+      if(polygon === fullPolygon && i == polygon.length - 1)
+        color = "blue";
+      drawCircle(polygon[i], color);
+    }
+    //Draw the lines connecting them
+    renderLine(polygon, {
+      closed: fullPolygonIsComplete
+    });
+  });
+}
+
 function render() {
-  function renderPolygons() {
-    allPolygons.forEach(function (polygon) {
-      for(var i=0; i<polygon.length; i++) {
-        var color = "black";
-        if(polygon === currentPolygon && i == polygon.length - 1)
-          color = "blue";
-        drawCircle(polygon[i], color);
-      }
-      //Draw the lines connecting them
-      renderLine(polygon, {
-        closed: polygon !== currentPolygon
-      });
+  function renderPolygonSplitter() {
+    for(var i=0; i<currentPolygonSplitter.length; i++) {
+      drawCircle(currentPolygonSplitter[i], "red");
+    }
+    renderLine(currentPolygonSplitter, {
+      strokeStyle: "red"
     });
   }
 
   canvas.clearCanvas();
   renderPolygons();
+  if(currentPolygonSplitter.length > 0) {
+    renderPolygonSplitter();
+  }
   renderOuterTriangle();
 }
 

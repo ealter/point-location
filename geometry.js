@@ -274,6 +274,26 @@ function pointIsInsideTriangle(p, triangle) {
   }
 }
 
+function pointIsOnPolygon(p, polygon) {
+  return polygon.some(function (p2) {
+    return p2.equals(p);
+  });
+}
+
+//If the point is a vertex on the polygon, this returns false
+function pointIsInsidePolygon(p, polygon) {
+  //Use the plum line test
+  var ray = new LineSegment(p, new Point(p.x + 1e5, p.y));
+  var count = 0;
+  for(var i=0; i<polygon.length; i++) {
+    var segment = new LineSegment(polygon[i], polygon.get(i + 1));
+    if(lineSegmentsIntersect(segment, ray)) {
+      count++;
+    }
+  }
+  return count % 2 === 1;
+}
+
 function triangulate(polygon) {
   var triangles = [];
   triangulateEarClipping(polygon, triangles);
@@ -512,7 +532,6 @@ function triangulationToGraph(triangles) {
     addTriangle(tri[2], triangles[i]);
   }
   //Convert the neighbors object to an array
-  console.log(graph);
   for(var n in graph) {
     if(graph.hasOwnProperty(n)) {
       graph[n].neighbors = $.map(graph[n].neighbors, function (value, key) { return value; });
