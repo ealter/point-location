@@ -174,11 +174,7 @@ function bisectingAngleUnitVector(p1, p2, p3) {
 
 function segmentIntersectsPolygon(polygon, seg) {
   for(var i=0; i<polygon.length - 1; i++) {
-    if(//!seg.p1.equals(polygon[i]) &&
-       //!seg.p2.equals(polygon[i]) &&
-       //!seg.p1.equals(polygon[i+1]) &&
-       //!seg.p2.equals(polygon[i+1]) &&
-       lineSegmentsIntersect(seg, new LineSegment(polygon[i], polygon[i+1]))) {
+    if(lineSegmentsIntersect(seg, new LineSegment(polygon[i], polygon[i+1]))) {
       return true;
     }
   }
@@ -630,7 +626,10 @@ function getNextTriangulationLevel(graph, independentSet) {
     holeTriangles.forEach(function (tri) {
       //The triangle might not overlap all of these, but it will overlap at most
       //8, so in terms of Big O, O(1) == O(8)
-      tri.overlaps = graph[p.hash()].triangles.slice(0);
+      tri.overlaps = graph[p.hash()].triangles.filter(function (tri2) {
+        return trianglesIntersect(tri, tri2);
+      });
+      console.assert(tri.overlaps.length > 0);
     });
     triangles = triangles.concat(holeTriangles);
   });
@@ -650,6 +649,22 @@ function getNextTriangulationLevel(graph, independentSet) {
   });
 
   return triangles;
+}
+
+function trianglesIntersect(t1, t2) {
+  //2 triangles intersect if any edges cross or if one is completely inside of
+  //the other
+  console.assert(t1.length === 3 && t2.length === 3);
+  for(var i=0; i<3; i++) {
+    var seg1 = new LineSegment(t1[i], t1.get(i+1));
+    if(segmentIntersectsPolygon(t2, seg1)) {
+      return true;
+    }
+    if(pointIsInsideTriangle(t1[i], t2) || pointIsInsideTriangle(t2[i], t1)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function getOneHoleInPolygon(graph, removedPoint) {
