@@ -26,9 +26,14 @@ function resetDataStructure() {
 
   render();
   setNextStep("Triangulate polygon", function() {
-    var triangles = triangulate(fullPolygon);
+    var triangles = [];
+    for(var i=0; i<polygonParts.length; i++) {
+      triangles = triangles.concat(triangulate(polygonParts[i]));
+    }
+    canvas.clearCanvas();
     render();
     renderTriangulation(triangles, "gray");
+    render(true);
     setNextStep("Triangulate outside of polygon", function() {
       triangles = triangles.concat(trianglesOutsidePolygon(fullPolygon, mainTriangle));
       renderTriangulation(triangles, "gray");
@@ -380,7 +385,7 @@ function addPolygonSplit(split) {
   var currentPart = 0; //Index in the parts array
   var innerSplit = split.slice(0); //All parts of the split except the first and last point
   innerSplit.splice(0, 1);
-  innerSplit.splice(innerSplit.length - 1, 0);
+  innerSplit.splice(innerSplit.length - 1, 1);
   var splitEnds = [split[0], split[split.length - 1]];
   for(var i=0; i<polygon.length; i++) {
     if(polygon[i].equals(splitEnds[0]) ||
@@ -403,6 +408,7 @@ function addPolygonSplit(split) {
   polygonParts.splice(polygonIndex, 1);
   polygonParts.push(parts[0]);
   polygonParts.push(parts[1]);
+  console.log(parts);
 }
 
 function renderLine(points, options) {
@@ -418,18 +424,17 @@ function renderLine(points, options) {
 
 function renderPolygons() {
   polygonParts.forEach(function (polygon) {
-    var vertexColor = "blue";
-    var strokeColor = "blue";
+    var vertexColor = "gray";
+    var strokeColor = "green";
     for(var i=0; i<polygon.length; i++) {
       if(polygon == fullPolygon && i == polygon.length - 1)
-        vertexColor = "blue";
+        vertexColor = "gray";
       else if(polygon == fullPolygon)
         vertexColor = "black";
       drawCircle(polygon[i], vertexColor);
     }
     if(polygon == fullPolygon)
       strokeColor = "black";
-    console.log("stroke style is ", strokeColor);
     //Draw the lines connecting them
     renderLine(polygon, {
       closed: fullPolygonIsComplete,
@@ -445,7 +450,7 @@ function renderPolygons() {
   }
 }
 
-function render() {
+function render(dontClearCanvas) {
   function renderPolygonSplitter() {
     for(var i=0; i<currentPolygonSplitter.length; i++) {
       drawCircle(currentPolygonSplitter[i], "red");
@@ -455,7 +460,9 @@ function render() {
     });
   }
 
-  canvas.clearCanvas();
+  if(!dontClearCanvas) {
+    canvas.clearCanvas();
+  }
   renderPolygons();
   if(currentPolygonSplitter.length > 0) {
     renderPolygonSplitter();
