@@ -191,7 +191,7 @@ function waitForPointLocationChoice(pointLocationData) {
   render();
   setCanvasOnClick(function (mouse) {
     canvas.off('click');
-    drawCircle(mouse, "green");
+    renderCircle(mouse, "green");
     choosePointButton.val("Reset point location");
     choosePointButton.removeAttr('disabled');
     nextButton.removeAttr('disabled');
@@ -207,7 +207,7 @@ function interactivelyLocatePoint(pointLocationData, query) {
     renderTriangulation(allTriangles, "gray");
     renderTriangulation(emphasizedTriangles, "blue");
     renderOuterTriangle();
-    drawCircle(query, "green");
+    renderCircle(query, "green");
   }
 
   function lastStep() {
@@ -273,7 +273,7 @@ function renderGraphWithoutPoints(graph, badpoints, color) {
         });
       }
     }
-    drawCircle(node.p, "black");
+    renderCircle(node.p, "black");
   });
   renderOuterTriangle();
 }
@@ -282,7 +282,7 @@ function removeNextIndependentSet(triangles, callback) {
   var graph = triangulationToGraph(triangles);
   var independentSet = getIndependentSet(graph, 8, mainTriangle);
   for(var i=0; i<independentSet.length; i++) {
-    drawCircle(independentSet[i], "brown");
+    renderCircle(independentSet[i], "brown");
   }
   setNextStep("Remove the independent set", function() {
     var newtriangles = removeIndependentSetFromTriangulation(triangles, independentSet);
@@ -431,7 +431,7 @@ function renderPolygons() {
         vertexColor = "gray";
       else if(polygon == fullPolygon)
         vertexColor = "black";
-      drawCircle(polygon[i], vertexColor);
+      renderCircle(polygon[i], vertexColor);
     }
     if(polygon == fullPolygon)
       strokeColor = "black";
@@ -446,14 +446,14 @@ function renderPolygons() {
     strokeStyle: "black"
   });
   for(var i=0; i<fullPolygon.length; i++) {
-    drawCircle(fullPolygon[i], "black");
+    renderCircle(fullPolygon[i], "black");
   }
 }
 
 function render(dontClearCanvas) {
   function renderPolygonSplitter() {
     for(var i=0; i<currentPolygonSplitter.length; i++) {
-      drawCircle(currentPolygonSplitter[i], "red");
+      renderCircle(currentPolygonSplitter[i], "red");
     }
     renderLine(currentPolygonSplitter, {
       strokeStyle: "red"
@@ -478,7 +478,7 @@ function renderOuterTriangle() {
   });
 }
 
-function drawCircle(p, color) {
+function renderCircle(p, color) {
   canvas.drawArc({
     fillStyle: color,
     strokeStyle: "black",
