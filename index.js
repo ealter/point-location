@@ -41,8 +41,6 @@ function startSplittingPolygon() {
   setCanvasOnClick(function (mouse) {
     var p = snapToPoint(mouse);
     var splitter = currentPolygonSplitter;
-    //If there is no splitter, then the point must hit the polygon
-    //TODO: work here
 
     var hitsAVertex = polygonParts.some(function (part) {
       return pointIsOnPolygon(p, part);
@@ -56,17 +54,13 @@ function startSplittingPolygon() {
       logMessage("Polygon splits must remain within the main polygon", true);
     } else if(splitter.length === 0 || !segmentIntersectsAnyPolygon(new LineSegment(splitter[splitter.length - 1], p))) {
       splitter.push(p);
+      render();
       var isFinishingSplit = hitsAVertex && splitter.length > 1;
-      renderLine(splitter, {
-        strokeStyle: "black"
-      });
-      if(!isFinishingSplit && splitter.length > 1) {
-        drawCircle(p, "yellow");
-      }
       if(isFinishingSplit) {
         logMessage("Adding a split to the polygon");
         addPolygonSplit(splitter);
         currentPolygonSplitter = [];
+        render();
       }
     } else {
       logMessage("Self intersecting segment. Ignoring.", true);
@@ -353,8 +347,62 @@ function renderTriangulation(triangles, color) {
 }
 
 function addPolygonSplit(split) {
-  logMessage("Adding the split now. TODO");
-  console.log(split);
+  console.assert(split.length > 1);
+  //Find which polygon part we want to split
+  //Returns the index in the polygonParts array
+  function whichPolygonPart() {
+    var p = null;
+    if(split.length > 2) {
+      p = split[1];
+    } else {
+      //The split is a chord. Take the midpoint
+      p = new Point((split[0].x + split[1].x)/2.0,
+                    (split[0].y + split[1].y)/2.0);
+      console.assert(!p.equals(split[0]) && !p.equals(split[1]));
+    }
+    //Only one polygon should contain the point
+    var hitPolygon = -1;
+    for(var i=0; i<polygonParts.length; i++) {
+      if(pointIsInsidePolygon(p, polygonParts[i])) {
+        console.assert(hitPolygon < 0);
+        hitPolygon = i;
+      }
+    }
+    console.assert(hitPolygon >= 0);
+    return hitPolygon;
+  }
+
+  var polygonIndex = whichPolygonPart();
+
+  //Split the polygon
+  var polygon = polygonParts[polygonIndex];
+  var parts = [[], []];
+  var currentPart = 0; //Index in the parts array
+  var innerSplit = split.slice(0); //All parts of the split except the first and last point
+  innerSplit.splice(0, 1);
+  innerSplit.splice(innerSplit.length - 1, 0);
+  var splitEnds = [split[0], split[split.length - 1]];
+  for(var i=0; i<polygon.length; i++) {
+    if(polygon[i].equals(splitEnds[0]) ||
+       polygon[i].equals(splitEnds[1])) {
+      parts[0].push(polygon[i]);
+      parts[1].push(polygon[i]);
+      var toAppend = innerSplit;
+      if(polygon[i].equals(splitEnds[1])) {
+        toAppend = innerSplit.slice(0).reverse();
+      }
+      //Append the inner split and switch polygons
+      parts[currentPart] = parts[currentPart].concat(toAppend);
+      currentPart = currentPart == 0 ? 1 : 0;
+    } else {
+      parts[currentPart].push(polygon[i]);
+    }
+  }
+
+  //Remove the old polygon from the array and replace it with the pair
+  polygonParts.splice(polygonIndex, 1);
+  polygonParts.push(parts[0]);
+  polygonParts.push(parts[1]);
 }
 
 function renderLine(points, options) {
@@ -370,17 +418,31 @@ function renderLine(points, options) {
 
 function renderPolygons() {
   polygonParts.forEach(function (polygon) {
+    var vertexColor = "blue";
+    var strokeColor = "blue";
     for(var i=0; i<polygon.length; i++) {
-      var color = "black";
-      if(polygon === fullPolygon && i == polygon.length - 1)
-        color = "blue";
-      drawCircle(polygon[i], color);
+      if(polygon == fullPolygon && i == polygon.length - 1)
+        vertexColor = "blue";
+      else if(polygon == fullPolygon)
+        vertexColor = "black";
+      drawCircle(polygon[i], vertexColor);
     }
+    if(polygon == fullPolygon)
+      strokeColor = "black";
+    console.log("stroke style is ", strokeColor);
     //Draw the lines connecting them
     renderLine(polygon, {
-      closed: fullPolygonIsComplete
+      closed: fullPolygonIsComplete,
+      strokeStyle: strokeColor
     });
   });
+  renderLine(fullPolygon, {
+    close: fullPolygonIsComplete,
+    strokeStyle: "black"
+  });
+  for(var i=0; i<fullPolygon.length; i++) {
+    drawCircle(fullPolygon[i], "black");
+  }
 }
 
 function render() {
