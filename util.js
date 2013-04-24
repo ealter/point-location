@@ -1,3 +1,14 @@
+//Browser Compatibility
+if(typeof console !== "object") {
+  console = {};
+}
+if(typeof console.log !== "function") {
+  console.log = function() {};
+}
+if(typeof console.assert !== "function") {
+  console.assert = function() {};
+}
+
 Array.prototype.get = function(i) {
   if(this.length === 0) {
     console.log("Tried to get value from 0-length array");
