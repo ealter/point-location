@@ -203,7 +203,6 @@ function waitForPointLocationChoice(pointLocationData) {
 
 function interactivelyLocatePoint(pointLocationData, query) {
   function renderCurrentTriangulation(allTriangles, emphasizedTriangles) {
-    canvas.clearCanvas();
     renderTriangulation(allTriangles, "gray");
     renderTriangulation(emphasizedTriangles, "blue");
     renderOuterTriangle();
@@ -220,6 +219,34 @@ function interactivelyLocatePoint(pointLocationData, query) {
       }
     }
     console.assert(correctTriangle);
+    //Find out which polygon this point belongs to. In a more real
+    //implementation, there would be a map from the triangles to their owners.
+    var correctPolygon = null;
+    for(var i=0; i<polygonParts.length; i++) {
+      if(pointIsInsidePolygon(query, polygonParts[i]))
+        correctPolygon = polygonParts[i];
+    }
+    var fillColor = "Coral";
+    canvas.clearCanvas();
+    if(correctPolygon) {
+      renderLine(correctPolygon, {
+        closed: true,
+        fillStyle: fillColor,
+        strokeStyle: fillColor
+      });
+    } else if(pointIsInsideTriangle(query, mainTriangle)) {
+      renderLine(mainTriangle, {
+        closed: true,
+        fillStyle: fillColor,
+        strokeStyle: fillColor
+      });
+      renderLine(fullPolygon, {
+        closed: true,
+        strokeStyle: "white",
+        fillStyle: "white"
+      });
+    }
+
     renderCurrentTriangulation(pointLocationData[0], [correctTriangle]);
     renderPolygons();
   }
@@ -228,6 +255,7 @@ function interactivelyLocatePoint(pointLocationData, query) {
     console.assert(level < pointLocationData.length);
     var triangles = pointLocationData[level];
 
+    canvas.clearCanvas();
     renderCurrentTriangulation(triangles, overlappingTriangles);
 
     var nextOverlaps = null;
