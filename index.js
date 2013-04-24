@@ -26,6 +26,7 @@ function resetDataStructure() {
 
   render();
   setNextStep("Triangulate polygon", function() {
+    logMessage("Triangulating each part of the polygon");
     var triangles = [];
     for(var i=0; i<polygonParts.length; i++) {
       triangles = triangles.concat(triangulate(polygonParts[i]));
@@ -35,6 +36,7 @@ function resetDataStructure() {
     renderTriangulation(triangles, "gray");
     render(true);
     setNextStep("Triangulate outside of polygon", function() {
+      logMessage("Triangulating between the polygon and the outer triangle");
       triangles = triangles.concat(trianglesOutsidePolygon(fullPolygon, mainTriangle));
       renderTriangulation(triangles, "gray");
       interactiveIndependentSetRemoval(triangles);
@@ -72,6 +74,7 @@ function startSplittingPolygon() {
     }
   });
   setNextStep("Done splitting polygon", function() {
+    logMessage("Done splitting the polygon");
     canvas.off('click');
     resetDataStructure();
   });
@@ -97,6 +100,7 @@ var logMessage = null;
       paragraph.addClass("errorMessage");
     }
     log.append(paragraph);
+    log.scrollTop(log[0].scrollHeight);
   };
 })();
 
@@ -185,6 +189,8 @@ function waitForPointLocationChoice(pointLocationData) {
     waitForPointLocationChoice(pointLocationData);
   });
   choosePointButton.attr('disabled', 'disabled');
+
+  logMessage("Waiting for a point to locate");
 
   nextButton.val("Choose a point to locate");
   choosePointButton.val("Choose a point to locate");
@@ -312,12 +318,15 @@ function removeNextIndependentSet(triangles, callback) {
   for(var i=0; i<independentSet.length; i++) {
     renderCircle(independentSet[i], "brown");
   }
+  logMessage("Found an independent set");
   setNextStep("Remove the independent set", function() {
     var newtriangles = removeIndependentSetFromTriangulation(triangles, independentSet);
     canvas.clearCanvas();
     renderOuterTriangle();
     renderGraphWithoutPoints(graph, independentSet, "blue"); //TODO
+    logMessage("Removed the independent set");
     setNextStep("Retriangulate the holes", function() {
+      logMessage("Retriangulated the holes left by the independent set");
       var holes = getHolesInPolygon(graph, independentSet);
       var holeTriangles = holes.map(triangulate);
       for(var i=0; i<holeTriangles.length; i++) {
