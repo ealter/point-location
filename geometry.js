@@ -173,8 +173,8 @@ function bisectingAngleUnitVector(p1, p2, p3) {
 }
 
 function segmentIntersectsPolygon(polygon, seg) {
-  for(var i=0; i<polygon.length - 1; i++) {
-    if(lineSegmentsIntersect(seg, new LineSegment(polygon[i], polygon[i+1]))) {
+  for(var i=0; i<polygon.length; i++) {
+    if(lineSegmentsIntersect(seg, new LineSegment(polygon[i], polygon.get(i+1)))) {
       return true;
     }
   }
