@@ -257,17 +257,23 @@ function interactivelyLocatePoint(pointLocationData, query) {
     renderPolygons();
   }
 
-  function nextLevel(level, overlappingTriangles) {
+  function nextLevel(level, overlappingTriangles, previousTriangle) {
     console.assert(level < pointLocationData.length);
     var triangles = pointLocationData[level];
 
     canvas.clearCanvas();
+    renderLine(previousTriangle, {
+      closed: true,
+      fillStyle: "wheat",
+      strokeStyle: "wheat"
+    });
     renderCurrentTriangulation(triangles, overlappingTriangles);
 
     var nextOverlaps = null;
     for(var i=0; i<triangles.length; i++) {
       if(pointIsInsideTriangle(query, triangles[i])) {
         nextOverlaps = triangles[i].overlaps;
+        previousTriangle = triangles[i];
         break;
       }
     }
@@ -278,11 +284,11 @@ function interactivelyLocatePoint(pointLocationData, query) {
       setNextStep("Last step: Find the point", lastStep);
     } else {
       setNextStep("Next level", function() {
-        nextLevel(level - 1, nextOverlaps);
+        nextLevel(level - 1, nextOverlaps, previousTriangle);
       });
     }
   }
-  nextLevel(pointLocationData.length - 1, []);
+  nextLevel(pointLocationData.length - 1, [], []);
 }
 
 function renderGraphWithoutPoints(graph, badpoints, color) {
