@@ -1,0 +1,108 @@
+<html>
+<head>
+  <title>About Kirkpatrick Point Location</title>
+</head>
+
+<body>
+<div style="max-width: 700">
+<h1>Kirpatrick Point Location</h1>
+<p>                
+  The simplest way to perform point location is to use the plum line algorithm.
+  Plum line is a very simple algorithm that runs in O(n) time.  In plum line,
+  you shoot a ray in an arbitrary direction from the query point to infinity.
+  Record the number of times the ray intersects a polygon. If this number is
+  odd, then the point is inside of the polygon. If not, then the point is
+  outside of the polygon.
+</p>
+<p>
+  Now this works well, however it is not fast enough if you are testing the
+  location of many points.  Kirpatrick's algorithm runs in O(log n) time after
+  O(n) preprocessing. One thing to note is that if the polygon has holes, then
+  the preprocessing will take O(n log n) time.
+</p>
+<h1>Preprocessing</h1>
+<p>
+  The first step in the preprocessing is to triangulate the polygon. This is the
+  most computationally expensive step. There exists an O(n) triangulation
+  algorithm for simple polygons without holes, however, it is incredibly
+  complicated and difficult to implement. Therefore, most implementations will
+  use the more simple O(n log n) algorithm (triangulating with monotone
+  polygons).
+</p>
+<p>
+  The next step is to surround the polygon with a triangle. This allows for a
+  simple, O(1) sanity check of whether the point could be inside of the polygon.
+  It does not matter how much extra space is between the polygon and the outer
+  triangle, as long as the polygon is completely contained within the triangle.
+  It is trivial to find this triangle in O(n) time by simply sweeping the 3
+  lines of an equilateral triangle from infinity towards the polygon.
+</p>
+<p>
+  Next, find the convex hull of the polygon. This can be done in O(n) time using
+  <a href="http://cgm.cs.mcgill.ca/~athens/cs601/Melkman.html">Melkman's convex
+  hull algorithm</a>. Triangulate each pocket of the polygon. Then, triangulate
+  between the convex hull and the outer triangle. This can be done in linear
+  time by finding the tangents from each vertex of the outer triangle to the
+  convex hull of the polygon. Triangulating between the tangents is trivial.
+</p>
+<p>
+  Note that when triangulating, each triangle should have a mark denoting
+  whether it is inside of the polygon or not.
+</p>
+<p>
+  For the next step, you first need to convert the triangulation into a graph
+  where the vertexes are nodes and the triangle edges are graph edges. The
+  next step is to find an independent set of low degree vertexes. A set of
+  vertexes is <b>independent</b> if and only if there are no edges between any
+  of the vertexes in the set. For this algorithm, all of the vertexes must also
+  have degree less than or equal to 8. It can be shown using 
+  <a href="http://en.wikipedia.org/wiki/Euler_characteristic">Euler characteristic</a>
+  that at least n/2 vertexes in the triangulation will have degree less than or
+  equal to 8. 
+</p>
+<p>
+  Now find and remove an independent set of low degree vertexes. Note that the
+  independent set should not include any of the 3 vertexes from the outer
+  triangle. This will leave a series of star-shaped holes in the polygon that
+  will be larger than triangles.  Retriangulate these holes. Note that the
+  number of new triangles in the hole is at most 6 (since the vertex has degree less
+  than or equal to 8). Now compare the new triangles (from the holes) with the
+  old triangles (connected to a vertex in the removed independent set). For each
+  new triangle, determine which of the old triangles intersect it. Keep pointers
+  to those triangles. Unchanged triangles should have a pointer back to a copy
+  of themselves.
+</p>
+<p>
+  Continue to find and remove the independent sets until you are only left with
+  the outermost triangle. At this point, the preprocessing is done and you are left
+  with a data structure similar to a tree. Each independent set removed creates a
+  level in the tree. The references to overlapping triangles form the tree
+  edges. The root of the tree is the outermost triangle, whereas the lowest
+  level of the tree is the original triangulation. One important thing to note
+  is that the height of the tree will be O(log n).
+</p>
+
+<h1>Locating a point</h1>
+<p>
+  Let <i>p</i> be a point to locate. Now we can simply traverse down the tree of
+  our data structure. At each level we know which current triangle the point is inside.
+  When going to the next level of the tree, compare <i>p</i> to each of
+  triangles that "overlapped" the current triangle. Note that this is a O(1)
+  operation since there are at most 6 "overlapped" triangles. By repeating this
+  process, you will eventually reach the original, full triangulation. At that
+  point, you will know which of those triangles <i>p</i> falls in. Since each
+  triangle in the original triangulation kept a mark as to whether it was
+  inside of the polygon, we can tell in constant time whether the point is in
+  the polygon.
+</p>
+<p>
+  At each level of the tree, we are spending O(1) time. Since there are O(log n)
+  levels of the tree, the entire point location takes O(log n) time.
+</p>
+  
+<h1>My experience implementing the algorithm</h1>
+TODO
+</div>
+</body>
+</html>
+
