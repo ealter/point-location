@@ -467,11 +467,11 @@ function renderLine(points, options) {
 
 function renderPolygons() {
   polygonParts.forEach(function (polygon) {
-    var vertexColor = "gray";
+    var vertexColor = "black";
     var strokeColor = "green";
     for(var i=0; i<polygon.length; i++) {
       if(polygon == fullPolygon && i == polygon.length - 1)
-        vertexColor = "gray";
+        vertexColor = "blue";
       else if(polygon == fullPolygon)
         vertexColor = "black";
       renderCircle(polygon[i], vertexColor);
@@ -488,9 +488,6 @@ function renderPolygons() {
     close: fullPolygonIsComplete,
     strokeStyle: "black"
   });
-  for(var i=0; i<fullPolygon.length; i++) {
-    renderCircle(fullPolygon[i], "black");
-  }
 }
 
 function render(dontClearCanvas) {
