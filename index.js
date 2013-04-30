@@ -468,7 +468,7 @@ function renderLine(points, options) {
 function renderPolygons() {
   polygonParts.forEach(function (polygon) {
     for(var i=0; i<polygon.length; i++) {
-      if(polygon == fullPolygon && i == polygon.length - 1)
+      if(i == polygon.length - 1 && !fullPolygonIsComplete)
         renderCircle(polygon[i], "blue");
       else
         renderCircle(polygon[i], "black");
