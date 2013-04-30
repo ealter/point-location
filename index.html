@@ -8,14 +8,16 @@
 </head>
 <body>
   <p><a href="about.html">About this algorithm</a></p>
-  <canvas id="canvas" width=700 height=450>
+  <canvas id="canvas" width=700 height=430>
     Canvas is not supported in your browser. Please use a modern browser to view
     this page.
   </canvas>
   <div id="messageLog"></div>
-  <p>Click on the button to display the next step. The button will become
-  enabled once you have finished drawing a polygon. For now, only make
-  simple polygons (not weakly simple polygons).</p>
+  <p>Begin by clicking within the brown triangle to create a polygon. Once you
+  complete the polygon (by drawing a segment to the starting vertex), you can
+  start to add splits to the polygon. A split starts at a vertex, goes somewhere
+  within the polygon, and ends at a different vertex as a chain. Then, start
+  clicking the buttons to perform the next steps.</p>
 
   <p><input type="checkbox" id="shouldAnimate" /> Animate algorithm</p>
   <div id="buildingDataStructure">
