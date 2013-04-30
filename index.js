@@ -322,7 +322,7 @@ function removeNextIndependentSet(triangles, callback) {
   var graph = triangulationToGraph(triangles);
   var independentSet = getIndependentSet(graph, 8, mainTriangle);
   for(var i=0; i<independentSet.length; i++) {
-    renderCircle(independentSet[i], "brown");
+    renderCircle(independentSet[i], "red");
   }
   logMessage("Found an independent set");
   setNextStep("Remove the independent set", function() {
@@ -467,26 +467,20 @@ function renderLine(points, options) {
 
 function renderPolygons() {
   polygonParts.forEach(function (polygon) {
-    var vertexColor = "black";
-    var strokeColor = "green";
     for(var i=0; i<polygon.length; i++) {
       if(polygon == fullPolygon && i == polygon.length - 1)
-        vertexColor = "blue";
-      else if(polygon == fullPolygon)
-        vertexColor = "black";
-      renderCircle(polygon[i], vertexColor);
+        renderCircle(polygon[i], "blue");
+      else
+        renderCircle(polygon[i], "black");
     }
     if(polygon == fullPolygon)
       strokeColor = "black";
     //Draw the lines connecting them
     renderLine(polygon, {
       closed: fullPolygonIsComplete,
-      strokeStyle: strokeColor
+      strokeStyle: strokeColor,
+      strokeWidth: 3
     });
-  });
-  renderLine(fullPolygon, {
-    close: fullPolygonIsComplete,
-    strokeStyle: "black"
   });
 }
 
