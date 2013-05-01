@@ -51,18 +51,18 @@
 </p>
 <p>
   For the next step, you first need to convert the triangulation into a graph
-  where the vertexes are nodes and the triangle edges are graph edges. The
-  next step is to find an independent set of low degree vertexes. A set of
-  vertexes is <b>independent</b> if and only if there are no edges between any
-  of the vertexes in the set. For this algorithm, all of the vertexes must also
+  where the vertices are nodes and the triangle edges are graph edges. The
+  next step is to find an independent set of low degree vertices. A set of
+  vertices is <b>independent</b> if and only if there are no edges between any
+  of the vertices in the set. For this algorithm, all of the vertices must also
   have degree less than or equal to 8. It can be shown using 
   <a href="http://en.wikipedia.org/wiki/Euler_characteristic">Euler characteristic</a>
-  that at least n/2 vertexes in the triangulation will have degree less than or
+  that at least n/2 vertices in the triangulation will have degree less than or
   equal to 8. 
 </p>
 <p>
-  Now find and remove an independent set of low degree vertexes. Note that the
-  independent set should not include any of the 3 vertexes from the outer
+  Now find and remove an independent set of low degree vertices. Note that the
+  independent set should not include any of the 3 vertices from the outer
   triangle. This will leave a series of star-shaped holes in the polygon that
   will be larger than triangles.  Retriangulate these holes. Note that the
   number of new triangles in the hole is at most 6 (since the vertex has degree less
