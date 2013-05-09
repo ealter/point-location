@@ -280,8 +280,8 @@ function interactivelyLocatePoint(pointLocationData, query) {
 
     if(nextOverlaps === null) {
       logMessage("The point was not found");
-    } else if(level <= 1) {
-      setNextStep("Last step: Find the point", lastStep);
+    } else if(level < 1) {
+      setNextStep("Last step: Find the polygon", lastStep);
     } else {
       setNextStep("Next level", function() {
         nextLevel(level - 1, nextOverlaps, previousTriangle);
