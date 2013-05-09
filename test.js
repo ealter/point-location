@@ -53,9 +53,6 @@ function runTests(testNum) {
                         [519,65]];
   var triangulation6 = [[216,351],
                         [307,293],
-                        [335,423],
-                        [469,339],
-                        [413,264],
                         [327,193],
                         [318,238],
                         [216,351]]; //This test fails because of no general position

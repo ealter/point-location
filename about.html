@@ -101,7 +101,33 @@
 </p>
   
 <h1>My experience implementing the algorithm</h1>
-TODO
+<p>Implementing this algorithm involved several subproblems. There were many times
+when I could have solved a problem asymptotically fast, but decided not to for
+simplicity sake. The first subproblem
+was triangulation. I could have used the monotone polygon method, but that was
+more complicated than the
+<a href="http://en.wikipedia.org/wiki/Polygon_triangulation#Ear_clipping_method">Ear
+Clipping method</a>. I went with Ear Clipping. This turned out to be
+significantly harder than I expected. Finding a diagonal from a reflex vertex
+was non-trivial. I needed functions for segment intersection, radial sweep, and
+angle bisection. I
+first shot ray out from the vertex and found the first segment that intersected
+it. I then radially swept within the triangle formed by the starting vertex
+and both sides of the segment. I needed to find the two radially closest points
+to my original ray. Until I discovered and played around with the
+<a href="http://en.wikipedia.org/wiki/Atan2">atan2</a> function, I had a lot of
+bugs finding the closets points. Unlike a normal arc-tangent, <code>atan2</code>
+takes in an x and y parameters and then returns a value between -&pi; and &pi;.</p>
+
+<p>There were also differences in implementation
+depending on whether the polygon was clockwise or counter-clockwise.</p>
+
+<p>Once I had a <code>findDiagonal</code> function, it was not as hard to implement
+the triangulate function. Determining whether a point was an ear could be done
+in linear time by seeing if any points were within the triangle formed by the
+point and its neighboring segments. If the point was not an ear, I found a
+diagonal from that point and then recursed on both sides (making sure to pick a
+new point somewhere in the middle of each side).</p>
 </div>
 </body>
 </html>
