@@ -8,6 +8,8 @@
   border: 1px solid black;
   padding-right: 10px;
   padding-left: 10px;
+  margin-top: 55px;
+  margin-right: 55px;
   overflow-y: scroll;
 }
 
