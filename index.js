@@ -4,6 +4,14 @@ var fullPolygonIsComplete = false;
 var currentPolygonSplitter = [];
 //Invariant: if fullPolygonIsComplete == false, then polygonParts.length == 1
 
+(function() {
+  try{
+    var q = jQuery;
+  } catch(e) {
+    alert("JQuery failed to load");
+  }
+})();
+
 var canvas = $("#canvas");
 var nextButton = $("#nextStepDataStructure");
 var canvasPosition = {
