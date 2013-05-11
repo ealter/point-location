@@ -159,7 +159,7 @@ function isEar(polygon, vertexIndex, isClockwise) {
   var v = polygon[vertexIndex];
   var triangle = [prev, v, next];
   for(var i=0; i<polygon.length - 3; i++) {
-    if(pointIsInsideTriangle(polygon.get(i + 2 + vertexIndex), triangle)) {
+    if(pointIsInsidePolygon(polygon.get(i + 2 + vertexIndex), triangle)) {
       return false;
     }
   }
@@ -223,7 +223,7 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
       if(triangle[j].equals(polygon[index]))
         return true;
     }
-    return pointIsInsideTriangle(polygon[index], triangle);
+    return pointIsInsidePolygon(polygon[index], triangle);
   }
   //Test every possible segment
   var rayVector = minIntersection.sub(polygon[fromIndex]);
@@ -256,18 +256,6 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
     return closestIndexes[1];
   }
   return closestIndexes[0];
-}
-
-//Tests whether the point p is inside the triangle
-function pointIsInsideTriangle(p, triangle) {
-  console.assert(triangle.length === 3);
-  if(isLeftTurn(triangle[0], triangle[1], p)) {
-    return isLeftTurn(triangle[1], triangle[2], p) &&
-           isLeftTurn(triangle[2], triangle[0], p);
-  } else {
-    return isRightTurn(triangle[1], triangle[2], p) &&
-           isRightTurn(triangle[2], triangle[0], p);
-  }
 }
 
 function pointIsOnPolygon(p, polygon) {
@@ -660,7 +648,7 @@ function trianglesIntersect(t1, t2) {
     if(segmentIntersectsPolygon(t2, seg1)) {
       return true;
     }
-    if(pointIsInsideTriangle(t1[i], t2) || pointIsInsideTriangle(t2[i], t1)) {
+    if(pointIsInsidePolygon(t1[i], t2) || pointIsInsidePolygon(t2[i], t1)) {
       return true;
     }
   }

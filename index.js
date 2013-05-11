@@ -113,7 +113,7 @@ function setCanvasOnClick(callback) {
 }
 
 setCanvasOnClick(function(mouse) {
-  if(pointIsInsideTriangle(mouse, mainTriangle)) {
+  if(pointIsInsidePolygon(mouse, mainTriangle)) {
     addPoint(mouse);
   } else {
     logMessage("Point is outside the main triangle", true);
@@ -219,7 +219,7 @@ function interactivelyLocatePoint(pointLocationData, query) {
     var correctTriangle = null;
     var triangles = pointLocationData[0];
     for(var i=0; i<triangles.length; i++) {
-      if(pointIsInsideTriangle(query, triangles[i])) {
+      if(pointIsInsidePolygon(query, triangles[i])) {
         correctTriangle = triangles[i];
         break;
       }
@@ -240,7 +240,7 @@ function interactivelyLocatePoint(pointLocationData, query) {
         fillStyle: fillColor,
         strokeStyle: fillColor
       });
-    } else if(pointIsInsideTriangle(query, mainTriangle)) {
+    } else if(pointIsInsidePolygon(query, mainTriangle)) {
       renderLine(mainTriangle, {
         closed: true,
         fillStyle: fillColor,
@@ -271,7 +271,7 @@ function interactivelyLocatePoint(pointLocationData, query) {
 
     var nextOverlaps = null;
     for(var i=0; i<triangles.length; i++) {
-      if(pointIsInsideTriangle(query, triangles[i])) {
+      if(pointIsInsidePolygon(query, triangles[i])) {
         nextOverlaps = triangles[i].overlaps;
         previousTriangle = triangles[i];
         break;
