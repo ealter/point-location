@@ -156,6 +156,35 @@ in linear time by seeing if any points were within the triangle formed by the
 point and its neighboring segments. If the point was not an ear, I found a
 diagonal from that point and then recursed on both sides (making sure to pick a
 new point somewhere in the middle of each side).</p>
+
+<p>The next step was figuring out how to triangulate between the polygon and the
+outer triangle. I implemented a
+<a href="http://en.wikipedia.org/wiki/Graham_scan">Graham Scan</a> to find the
+convex hull of the polygon. Since I had already implemented a radial sweep
+function while implementing <code>findDiagonal</code>, it was fairly easy to
+implement the Graham Scan. To triangulate the pockets, I used a two-finger
+algorithm. I walked along the convex hull while walking along the polygon. When
+the convex hull got ahead of the polygon, then I knew that I was inside of a
+pocket. When they converged again, I was out of the pocket.</p>
+
+<p>Then I determined the tangents between the hull and each vertex of the outer
+triangle. This was a fairly simple radial sweep; the tangents were the two most
+radially extreme vertices.</p>
+
+<p>The next step was converting the triangulation into a graph. Since I was
+implementing the algorithm in a bounded universe (the HTML5 canvas with fixed
+dimensions), I was able to hash vertices with
+<code>hash(p) = p.y * maxWidth + p.x</code> Then, I had to simply go through
+each edge in the triangulation, check if that edge was already in adjacency list
+for either vertex, and if not, add it to each adjacency list.</p>
+
+<p>Actually implementing the algorithm itself was easier than I expected. It was
+fairly trivial to find an independent set of low degree vertices from the graph.
+Then, after retriangulating the holes, I simply compared each new triangle with
+each triangle that had been removed. For each removed triangle, I kept an array
+of the "overlapped" triangles.</p>
+
+<p>Overall, this was a very interesting project to implement.</p>
 </div>
 </body>
 </html>
