@@ -89,15 +89,6 @@ function getLineSegmentIntersection(s1, s2) {
   return s1.p1.add(r.scalarMult(t));
 }
 
-function rayToHugeSegment(ray) {
-  var multiplier = 1000000/ray.magnitude();
-  return new LineSegment(ray.p1, new Point(ray.p2.x * multiplier, ray.p2.y * multiplier));
-}
-
-function lineSegmentIntersectsRay(seg, ray) {
-  return lineSegmentsIntersect(seg, rayToHugeSegment(ray));
-}
-
 function isReflexVertex(polygon, i, isClockwise) {
   if(polygon.length < 4) {
     return false;
@@ -141,6 +132,7 @@ function isEar(polygon, vertexIndex, isClockwise) {
   var next = polygon.get(vertexIndex + 1);
   var v = polygon[vertexIndex];
   var triangle = [prev, v, next];
+  //Don't search the vertexIndex or its 2 neighboring vertices
   for(var i=0; i<polygon.length - 3; i++) {
     if(pointIsInsidePolygon(polygon.get(i + 2 + vertexIndex), triangle)) {
       return false;
@@ -169,16 +161,15 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
   var rayVector = bisectingAngleUnitVector(polygon.get(fromIndex-1), polygon[fromIndex], polygon.get(fromIndex+1));
   rayVector = rayVector.scalarMult(1e6);
   if(isReflexVertex(polygon, fromIndex, isClockwise)) {
-    rayVector = rayVector.scalarMult(-1); //Flip by 180 degrees
+    rayVector = rayVector.scalarMult(-1); //Flip by 180 degrees since we want to point inside the polygon
   }
   var ray = new LineSegment(polygon[fromIndex], polygon[fromIndex].add(rayVector));
   //Shoot that ray and find the first point that it hits
-  var endingIndex = fromIndex - 1;
-  while(endingIndex < 0)
-    endingIndex += polygon.length;
+  var endingIndex = polygon.normalizeIndex(fromIndex - 1);
   var minimumDistance = Number.MAX_VALUE;
   var minIndex = -1;
   var minIntersection = PointZero;
+  //Try every segment except the ones containing fromIndex
   for(var j=0; j<polygon.length - 2; j++) {
     var index = polygon.normalizeIndex(j + fromIndex + 1);
     console.assert(index !== fromIndex);
@@ -198,7 +189,7 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
   console.assert(minIndex >= 0);
   console.assert(polygon.normalizeIndex(minIndex + 1) !== fromIndex);
   var triangle = [polygon[minIndex], polygon.get(minIndex + 1), polygon[fromIndex]];
-  //Sweep this line in both directions radially (but only stuff we can see)
+  //Sweep this line in both directions radially (but only stuff within that triangle)
   var closestIndexes = [-1, -1];
   var closestAngles  = [Number.MAX_VALUE, -Number.MAX_VALUE];
   function pointIsOnOrInsideTriangle(index) {
@@ -208,7 +199,7 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
     }
     return pointIsInsidePolygon(polygon[index], triangle);
   }
-  //Test every possible segment
+  //Test every vertex, except fromIndex
   var rayVector = minIntersection.sub(polygon[fromIndex]);
   var rayAngle = Math.atan2(rayVector.x, rayVector.y);
   for(var j=0; j<polygon.length - 1; j++) {
@@ -225,7 +216,7 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
           closestAngles[1] = angle;
           closestIndexes[1] = i;
         }
-        } else {
+      } else {
         if(angle < closestAngles[0]) {
           closestAngles[0] = angle;
           closestIndexes[0] = i;
@@ -235,7 +226,7 @@ function makeDiagonal(polygon, fromIndex, isClockwise) {
   }
   console.assert(closestIndexes[0] >= 0 && closestIndexes[1] >= 0);
   if(closestIndexes[0] === polygon.normalizeIndex(fromIndex + 1) ||
-      closestIndexes[0] === endingIndex) {
+     closestIndexes[0] === polygon.normalizeIndex(fromIndex - 1)) {
     return closestIndexes[1];
   }
   return closestIndexes[0];
@@ -338,6 +329,7 @@ function trianglesOutsidePolygon(polygon, outerTriangle) {
         isInsidePocket = false;
         hullIndex = (hullIndex + 1) % hull.length;
       } else {
+        //The hull is ahead. Therefore, we are in a pocket
         if(!isInsidePocket) {
           isInsidePocket = true;
           beginPocket = polygon.normalizeIndex(i - 1);
@@ -357,6 +349,7 @@ function trianglesOutsidePolygon(polygon, outerTriangle) {
   function tangentIndexes(origin, hull) {
     //Calculates the 2 points that are tangent to the hull from the "origin"
     //Precondition: the origin is outside of the hull
+    //Precondition: hull is a convex polygon
     shootRaysFromPointToPolygon(hull, origin);
     var referenceAngle = hull[0].angle;
     var minIndex = 0;
@@ -379,11 +372,11 @@ function trianglesOutsidePolygon(polygon, outerTriangle) {
     return [minIndex, maxIndex];
   }
 
-  //find the convex hull of the pointset,
-  //triangulate each pocket, and then triangulate the outer pocket.
   console.assert(outerTriangle.length === 3);
   var hull = convexHull(polygon);
   var triangles = triangulateAllPockets(polygon, hull);
+
+  //Triangulate between the hull and the outerTriangle
   for(var i=0; i<outerTriangle.length; i++) {
     var tangents = tangentIndexes(outerTriangle[i], hull);
     //If the polygon is counterclockwise then go from tangents[0] to tangents[1]
@@ -423,7 +416,6 @@ function shootRaysFromPointToPolygon(polygon, p) {
 function radiallySortPoints(polygon, origin) {
   shootRaysFromPointToPolygon(polygon, origin);
 
-  //Sort the points radially counter-clockwise
   polygon.sort(function (p1, p2) {
     return p2.angle - p1.angle;
   });
@@ -447,7 +439,6 @@ function convexHull(polygon) {
       i++;
     } else {
       hull.pop();
-      console.assert(hull.length >= 1);
       if(hull.length < 1)
         throw "Infinite loop";
     }
@@ -515,12 +506,9 @@ function getIndependentSet(graph, maxDegree, ignoreVertices) {
     if(graph.hasOwnProperty(key)) {
       var node = graph[key];
       if(node.neighbors.length <= maxDegree) {
-        var isIgnored = false;
-        for(var i=0; i<ignoreVertices.length; i++) {
-          if(node.p.equals(ignoreVertices[i])) {
-            isIgnored = true;
-          }
-        }
+        var isIgnored = ignoreVertices.some(function(p) {
+          return node.p.equals(p);
+        });
         if(!isIgnored) {
           lowDegreeVertices[node.p.hash()] = node;
         }
@@ -570,6 +558,8 @@ function getNextTriangulationLevel(graph, independentSet) {
     node.mark = false;
   });
 
+  //This makes the algorithm O(n^2). It would be faster if I hashed the
+  //triangles (so that this function was O(1) average case instead of O(n^2))
   function shouldAddTriangle(tri) {
     //Check if any of the points are in the independent set
     for(var i=0; i<independentSet.length; i++) {
@@ -596,7 +586,7 @@ function getNextTriangulationLevel(graph, independentSet) {
     var holeTriangles = triangulate(hole);
     holeTriangles.forEach(function (tri) {
       //The triangle might not overlap all of these, but it will overlap at most
-      //8, so in terms of Big O, O(1) == O(8)
+      //6, so in terms of Big O, O(1) == O(6)
       tri.overlaps = graph[p.hash()].triangles.filter(function (tri2) {
         return trianglesIntersect(tri, tri2);
       });
