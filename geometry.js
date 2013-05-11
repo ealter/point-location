@@ -29,16 +29,8 @@ Point.prototype.copy = function() {
   return new Point(this.x, this.y);
 };
 
-Point.prototype.vector = function() {
-  return new LineSegment(PointZero, this.copy());
-};
-
 Point.prototype.normalize = function() {
   return this.scalarDiv(Math.sqrt(this.x * this.x + this.y * this.y));
-};
-
-Point.prototype.dotProduct = function(p) {
-  return this.x * p.x + this.y * p.y;
 };
 
 Point.prototype.hash = function() {
@@ -53,15 +45,6 @@ function LineSegment(p1, p2) {
 
 LineSegment.prototype.magnitude = function() {
   return Math.sqrt(distanceSquared(this.p1, this.p2));
-};
-
-LineSegment.prototype.crossProduct = function(s2) {
-  return crossProduct(this.p1, this.p2, s2.p1, s2.p2);
-};
-
-LineSegment.prototype.unitVector = function() {
-  var length = this.magnitude();
-  return this.p2.sub(this.p1).scalarDiv(length);
 };
 
 function distanceSquared(p1, p2) {
