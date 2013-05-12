@@ -7,9 +7,15 @@
 <div style="max-width: 700">
 <p><a href='/'>&lt;-- back</a></p>
 <h1>Kirpatrick Point Location</h1>
+<p>
+  Point location is a fundemental topic in computational geometry. Given a set
+  of disjoint regions, you want to determine which region a
+  given point lies in. The regions may be polygons, but could simply be parts of
+  a graph.
+</p>
 <p>                
-  The simplest way to perform point location is to use the plum line algorithm.
-  Plum line is a very simple algorithm that runs in O(n) time.  In plum line,
+  The simplest way to perform point location is to use the plumb line algorithm.
+  Plumb line is a very simple algorithm that runs in O(n) time.  In plumb line,
   you shoot a ray in an arbitrary direction from the query point to infinity.
   Record the number of times the ray intersects a polygon. If this number is
   odd, then the point is inside of the polygon. If not, then the point is
@@ -18,17 +24,23 @@
 <p>
   Now this works well, however it is not fast enough if you are testing the
   location of many points.  Kirpatrick's algorithm runs in O(log n) time after
-  O(n) preprocessing. One thing to note is that if the polygon has holes, then
-  the preprocessing will take O(n log n) time.
+  O(n) preprocessing. One thing to note is that if the regions are disconnected,
+  then the preprocessing can take O(n log n) time.
 </p>
 <h1>Preprocessing</h1>
 <p>
+  For simplicity's sake, I will assume that the boundary of the graph is a
+  polygon.
+</p>
+<p>
   The first step in the preprocessing is to triangulate the polygon. This is the
-  most computationally expensive step. There exists an O(n) triangulation
-  algorithm for simple polygons without holes, however, it is incredibly
+  most computationally expensive step. There exists an
+  <a href="http://www.cs.princeton.edu/~chazelle/pubs/polygon-triang.pdf">O(n) triangulation
+  algorithm for simple polygons without holes</a>, however, it is incredibly
   complicated and difficult to implement. Therefore, most implementations will
-  use the more simple O(n log n) algorithm (triangulating with monotone
-  polygons).
+  use a more simple O(n log n) algorithm (such as
+  <a href="http://en.wikipedia.org/wiki/Polygon_triangulation#Using_monotone_polygons">
+  triangulating with monotone polygons</a>).
 </p>
 <p>
   The next step is to surround the polygon with a triangle. This allows for a
@@ -51,12 +63,10 @@
   whether it is inside of the polygon or not.
 </p>
 <p>
-  For the next step, you first need to convert the triangulation into a graph
-  where the vertices are nodes and the triangle edges are graph edges. The
-  next step is to find an independent set of low degree vertices. A set of
-  vertices is <b>independent</b> if and only if there are no edges between any
-  of the vertices in the set. For this algorithm, all of the vertices must also
-  have degree less than or equal to 8.
+   The next step is to find an independent set of low degree vertices. A set of
+   vertices is <b>independent</b> if and only if there are no edges between any
+   of the vertices in the set. For this algorithm, all of the vertices must also
+   have degree less than or equal to 8.
 </p>
 <p>It can be shown using 
   <a href="http://en.wikipedia.org/wiki/Euler_characteristic">Euler characteristic</a>
@@ -65,8 +75,9 @@
   <a href="http://www.cs.umd.edu/~mount/754/Lects/754lects.pdf">David Mount's
   Computational Geometry notes</a>. Since each vertex in the independent set can
   have 8 neighbors and there are at least n/2 candidates for the independent
-  set, the independent set must contain at least n/18 vertices. Therefore, by
-  removing an independent set at each step, we are removing a constant fraction
+  set, the independent set must contain at least n/18 vertices. A "step" in the
+  algorithm consists of finding an independent set, removing that independent
+  set, and retriangulating the holes. Therefore at each step, we are removing a constant fraction
   of the input data (1/18). By doing a linear amount of work at each step of the
   algorithm, the total running time is O(n).
 </p>
@@ -74,7 +85,7 @@
   Now find and remove an independent set of low degree vertices. Note that the
   independent set should not include any of the 3 vertices from the outer
   triangle. This will leave a series of star-shaped holes in the polygon that
-  will be larger than triangles.  Retriangulate these holes. Note that the
+  may be larger than triangles.  Retriangulate these holes. Note that the
   number of new triangles in the hole is at most 6 (since the vertex has degree less
   than or equal to 8). Now compare the new triangles (from the holes) with the
   old triangles (connected to a vertex in the removed independent set). For each
@@ -94,7 +105,7 @@ holes left where each red point was.</p>
 <p>
   Continue to find and remove the independent sets until you are only left with
   the outermost triangle. At this point, the preprocessing is done and you are left
-  with a data structure similar to a tree. Each independent set removed creates a
+  with a DAG. Each independent set removed creates a
   level in the tree. The references to overlapping triangles form the tree
   edges. The root of the tree is the outermost triangle, whereas the lowest
   level of the tree is the original triangulation. One important thing to note
@@ -131,21 +142,22 @@ blue triangles from the first picture.
 <h1>My experience implementing the algorithm</h1>
 <p>Implementing this algorithm involved several subproblems. There were many times
 when I could have solved a problem asymptotically fast, but decided not to for
-simplicity sake. The first subproblem
+simplicity's sake. The first subproblem
 was triangulation. I could have used the monotone polygon method, but that was
 more complicated than the
 <a href="http://en.wikipedia.org/wiki/Polygon_triangulation#Ear_clipping_method">Ear
 Clipping method</a>. I went with Ear Clipping. This turned out to be
 significantly harder than I expected. Finding a diagonal from a reflex vertex
 was non-trivial. I needed functions for segment intersection, radial sweep, and
-angle bisection. I
-first shot ray out from the vertex and found the first segment that intersected
+angle bisection. I first arbirtarily chose a vertex in the polygon. I
+then shot ray out from the vertex and found the first segment that intersected
 it. I then radially swept within the triangle formed by the starting vertex
-and both sides of the segment. I needed to find the two radially closest points
+and both sides of that segment. I needed to find the two radially closest points
 to my original ray. Until I discovered and played around with the
 <a href="http://en.wikipedia.org/wiki/Atan2">atan2</a> function, I had a lot of
-bugs finding the closets points. Unlike a normal arc-tangent, <code>atan2</code>
-takes in an x and y parameters and then returns a value between -&pi; and &pi;.</p>
+bugs finding the closest points. Unlike a normal arc-tangent,
+<a href="http://en.wikipedia.org/wiki/Atan2"><code>atan2</code></a>
+takes in parameters x and y, and then returns a value between -&pi; and &pi;.</p>
 
 <p>There were also differences in implementation
 depending on whether the polygon was clockwise or counter-clockwise.</p>
@@ -171,11 +183,13 @@ pocket. When they converged again, I was out of the pocket.</p>
 triangle. This was a fairly simple radial sweep; the tangents were the two most
 radially extreme vertices.</p>
 
-<p>The next step was converting the triangulation into a graph. Since I was
+<p>The next step was converting the triangulation into a graph. When I performed
+the triangulation, I stored an array of triangles. For point location, I needed
+an adjacency list data structure. Since I was
 implementing the algorithm in a bounded universe (the HTML5 canvas with fixed
 dimensions), I was able to hash vertices with
 <code>hash(p) = p.y * maxWidth + p.x</code> Then, I had to simply go through
-each edge in the triangulation, check if that edge was already in adjacency list
+each edge in the triangulation, check if that edge was already in the adjacency list
 for either vertex, and if not, add it to each adjacency list.</p>
 
 <p>Actually implementing the algorithm itself was easier than I expected. It was
