@@ -443,8 +443,7 @@ function convexHull(polygon) {
         throw "Infinite loop";
     }
   }
-  var hullIsClockwise = isPolygonClockwise(hull);
-  if(isPolygonClockwise(polygon) != hullIsClockwise) {
+  if(isPolygonClockwise(polygon) != isPolygonClockwise(hull)) {
     hull.reverse();
   }
   return hull;
